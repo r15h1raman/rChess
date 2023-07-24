@@ -127,7 +127,7 @@ impl FromStr for Bitboard {
             return Err(FENParseError::IncorrectPartsCount(fen_parts.len()));
         }
 
-        let fen_board: Vec<&str> = fen_parts[0].split("/").collect();
+        let fen_board: Vec<&str> = fen_parts[0].split('/').collect();
         if fen_board.len() != 8 {
             return Err(FENParseError::IncorrectBoardLength(fen_board.len()));
         }
@@ -176,7 +176,7 @@ impl FromStr for Bitboard {
             _ => return Err(FENParseError::IncorrectToMove),
         };
 
-        let castling_rights = fen_parts[2].chars().try_fold(0 as u8, |acc, c| match c {
+        let castling_rights = fen_parts[2].chars().try_fold(0, |acc, c| match c {
             'K' => Ok(acc | CastlingRights::WhiteKingsideCastle as u8),
             'Q' => Ok(acc | CastlingRights::WhiteQueensideCastle as u8),
             'k' => Ok(acc | CastlingRights::BlackKingsideCastle as u8),
@@ -201,14 +201,14 @@ impl FromStr for Bitboard {
             .parse::<usize>()
             .map_err(|_| FENParseError::IncorrectFullMoveClock)?;
 
-        return Ok(Bitboard {
+        Ok(Bitboard {
             pieces,
             to_move,
             castling_rights,
             en_passant_square,
             half_move_clock,
             full_move_clock,
-        });
+        })
     }
 }
 
