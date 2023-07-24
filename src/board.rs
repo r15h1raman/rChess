@@ -283,6 +283,12 @@ pub mod tests {
 
     #[test]
     fn from_str_errors() {
+        let position_fen = "1 2 3 4 5";
+        assert_eq!(
+            position_fen.parse::<Bitboard>(),
+            Err(FENParseError::IncorrectPartsCount(5))
+        );
+
         let position_fen = "rnbqkbnr/pppppppp/9/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         assert_eq!(
             position_fen.parse::<Bitboard>(),
