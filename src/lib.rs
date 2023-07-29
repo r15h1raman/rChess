@@ -1,2 +1,3 @@
-pub mod board;
-pub mod errors;
+pub mod bitboard;
+pub mod table_generators;
+pub mod utils;

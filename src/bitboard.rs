@@ -1,112 +1,15 @@
-use crate::errors::FENParseError;
+use crate::utils::{board_slice::BoardSlice, enums::*, errors::FENParseError};
 use std::str::FromStr;
-use strum_macros::EnumString;
 
-#[derive(Debug, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Color {
-    White,
-    Black,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Piece {
-    Pawn,
-    Knight,
-    Bishop,
-    Rook,
-    Queen,
-    King,
-}
-
-macro_rules! piece_index {
+macro_rules! bitboard_piece_index {
     ($c: expr, $p: expr) => {
         ($c as usize) * 6 + ($p as usize)
     };
 }
 
-#[derive(PartialEq, Eq)]
-#[repr(u8)]
-pub enum CastlingRights {
-    WhiteKingsideCastle = 0b1,
-    WhiteQueensideCastle = 0b10,
-    BlackKingsideCastle = 0b100,
-    BlackQueensideCastle = 0b1000,
-}
-
-#[derive(Debug, EnumString, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Square {
-    A1,
-    B1,
-    C1,
-    D1,
-    E1,
-    F1,
-    G1,
-    H1,
-    A2,
-    B2,
-    C2,
-    D2,
-    E2,
-    F2,
-    G2,
-    H2,
-    A3,
-    B3,
-    C3,
-    D3,
-    E3,
-    F3,
-    G3,
-    H3,
-    A4,
-    B4,
-    C4,
-    D4,
-    E4,
-    F4,
-    G4,
-    H4,
-    A5,
-    B5,
-    C5,
-    D5,
-    E5,
-    F5,
-    G5,
-    H5,
-    A6,
-    B6,
-    C6,
-    D6,
-    E6,
-    F6,
-    G6,
-    H6,
-    A7,
-    B7,
-    C7,
-    D7,
-    E7,
-    F7,
-    G7,
-    H7,
-    A8,
-    B8,
-    C8,
-    D8,
-    E8,
-    F8,
-    G8,
-    H8,
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct Bitboard {
-    pieces: [u64; 12],
+    pieces: [BoardSlice; 12],
 
     to_move: Color,
 
@@ -132,7 +35,7 @@ impl FromStr for Bitboard {
             return Err(FENParseError::IncorrectBoardLength(fen_board.len()));
         }
 
-        let mut pieces = [0; 12];
+        let mut pieces = [BoardSlice(0); 12];
         fen_board
             .iter()
             .rev()
@@ -143,18 +46,42 @@ impl FromStr for Bitboard {
                         return Err(FENParseError::IncorrectBoardRowLength(row_index + 1));
                     }
                     match c {
-                        'P' => pieces[piece_index!(Color::White, Piece::Pawn)] |= 1 << acc,
-                        'N' => pieces[piece_index!(Color::White, Piece::Knight)] |= 1 << acc,
-                        'B' => pieces[piece_index!(Color::White, Piece::Bishop)] |= 1 << acc,
-                        'R' => pieces[piece_index!(Color::White, Piece::Rook)] |= 1 << acc,
-                        'Q' => pieces[piece_index!(Color::White, Piece::Queen)] |= 1 << acc,
-                        'K' => pieces[piece_index!(Color::White, Piece::King)] |= 1 << acc,
-                        'p' => pieces[piece_index!(Color::Black, Piece::Pawn)] |= 1 << acc,
-                        'n' => pieces[piece_index!(Color::Black, Piece::Knight)] |= 1 << acc,
-                        'b' => pieces[piece_index!(Color::Black, Piece::Bishop)] |= 1 << acc,
-                        'r' => pieces[piece_index!(Color::Black, Piece::Rook)] |= 1 << acc,
-                        'q' => pieces[piece_index!(Color::Black, Piece::Queen)] |= 1 << acc,
-                        'k' => pieces[piece_index!(Color::Black, Piece::King)] |= 1 << acc,
+                        'P' => {
+                            pieces[bitboard_piece_index!(Color::White, Piece::Pawn)].0 |= 1 << acc
+                        }
+                        'N' => {
+                            pieces[bitboard_piece_index!(Color::White, Piece::Knight)].0 |= 1 << acc
+                        }
+                        'B' => {
+                            pieces[bitboard_piece_index!(Color::White, Piece::Bishop)].0 |= 1 << acc
+                        }
+                        'R' => {
+                            pieces[bitboard_piece_index!(Color::White, Piece::Rook)].0 |= 1 << acc
+                        }
+                        'Q' => {
+                            pieces[bitboard_piece_index!(Color::White, Piece::Queen)].0 |= 1 << acc
+                        }
+                        'K' => {
+                            pieces[bitboard_piece_index!(Color::White, Piece::King)].0 |= 1 << acc
+                        }
+                        'p' => {
+                            pieces[bitboard_piece_index!(Color::Black, Piece::Pawn)].0 |= 1 << acc
+                        }
+                        'n' => {
+                            pieces[bitboard_piece_index!(Color::Black, Piece::Knight)].0 |= 1 << acc
+                        }
+                        'b' => {
+                            pieces[bitboard_piece_index!(Color::Black, Piece::Bishop)].0 |= 1 << acc
+                        }
+                        'r' => {
+                            pieces[bitboard_piece_index!(Color::Black, Piece::Rook)].0 |= 1 << acc
+                        }
+                        'q' => {
+                            pieces[bitboard_piece_index!(Color::Black, Piece::Queen)].0 |= 1 << acc
+                        }
+                        'k' => {
+                            pieces[bitboard_piece_index!(Color::Black, Piece::King)].0 |= 1 << acc
+                        }
                         '1'..='9' => {
                             if (c.to_digit(10).unwrap() as usize + acc) > (row_index + 1) * 8 {
                                 return Err(FENParseError::IncorrectBoardRowLength(row_index + 1));
@@ -215,7 +142,7 @@ impl FromStr for Bitboard {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::errors::*;
+    use crate::utils::errors::FENParseError;
 
     #[test]
     fn from_str_valid_1() {
@@ -224,18 +151,18 @@ pub mod tests {
             position_fen.parse::<Bitboard>(),
             Ok(Bitboard {
                 pieces: [
-                    0x000000000000FF00,
-                    0x0000000000000042,
-                    0x0000000000000024,
-                    0x0000000000000081,
-                    0x0000000000000008,
-                    0x0000000000000010,
-                    0x00FF000000000000,
-                    0x4200000000000000,
-                    0x2400000000000000,
-                    0x8100000000000000,
-                    0x0800000000000000,
-                    0x1000000000000000,
+                    BoardSlice(0x000000000000FF00),
+                    BoardSlice(0x0000000000000042),
+                    BoardSlice(0x0000000000000024),
+                    BoardSlice(0x0000000000000081),
+                    BoardSlice(0x0000000000000008),
+                    BoardSlice(0x0000000000000010),
+                    BoardSlice(0x00FF000000000000),
+                    BoardSlice(0x4200000000000000),
+                    BoardSlice(0x2400000000000000),
+                    BoardSlice(0x8100000000000000),
+                    BoardSlice(0x0800000000000000),
+                    BoardSlice(0x1000000000000000),
                 ],
                 to_move: Color::White,
                 castling_rights: (CastlingRights::WhiteKingsideCastle as u8
@@ -256,18 +183,18 @@ pub mod tests {
             position_fen.parse::<Bitboard>(),
             Ok(Bitboard {
                 pieces: [
-                    0x000000001000EF00,
-                    0x0000000000000042,
-                    0x0000000000000024,
-                    0x0000000000000081,
-                    0x0000000000000008,
-                    0x0000000000000010,
-                    0x00FF000000000000,
-                    0x4200000000000000,
-                    0x2400000000000000,
-                    0x8100000000000000,
-                    0x0800000000000000,
-                    0x1000000000000000,
+                    BoardSlice(0x000000001000EF00),
+                    BoardSlice(0x0000000000000042),
+                    BoardSlice(0x0000000000000024),
+                    BoardSlice(0x0000000000000081),
+                    BoardSlice(0x0000000000000008),
+                    BoardSlice(0x0000000000000010),
+                    BoardSlice(0x00FF000000000000),
+                    BoardSlice(0x4200000000000000),
+                    BoardSlice(0x2400000000000000),
+                    BoardSlice(0x8100000000000000),
+                    BoardSlice(0x0800000000000000),
+                    BoardSlice(0x1000000000000000),
                 ],
                 to_move: Color::Black,
                 castling_rights: (CastlingRights::WhiteKingsideCastle as u8
