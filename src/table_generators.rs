@@ -1,4 +1,33 @@
-use crate::utils::board_slice::BoardSlice;
+use crate::utils::{board_slice::BoardSlice, enums::Color};
+
+#[allow(clippy::needless_range_loop)]
+pub fn generate_pawn_attack_table(color: Color) -> [[BoardSlice; 8]; 8] {
+    let mut attack_table = [[BoardSlice(0); 8]; 8];
+    match color {
+        Color::White => {
+            for i in 1..7 {
+                for j in 0..8 {
+                    attack_table[i][j].0 |= 1 << (i * 8 + j + 8);
+                }
+            }
+            for j in 0..8 {
+                attack_table[1][j].0 |= 1 << (8 + j + 16);
+            }
+        }
+        Color::Black => {
+            for i in 1..7 {
+                for j in 0..8 {
+                    attack_table[i][j].0 |= 1 << (i * 8 + j - 8);
+                }
+            }
+            for j in 0..8 {
+                attack_table[6][j].0 |= 1 << (48 + j - 16);
+            }
+        }
+    }
+
+    attack_table
+}
 
 #[allow(clippy::needless_range_loop)]
 pub fn generate_knight_attack_table() -> [[BoardSlice; 8]; 8] {
@@ -110,10 +139,49 @@ pub fn generate_king_attack_table() -> [[BoardSlice; 8]; 8] {
 
     attack_table
 }
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::utils::enums::{File, Rank};
+
+    #[test]
+    fn pawn_attack_table_valid() {
+        let white_attack_table = generate_pawn_attack_table(Color::White);
+        let black_attack_table = generate_pawn_attack_table(Color::Black);
+        assert_eq!(
+            white_attack_table[Rank::Rank1 as usize][File::AFile as usize],
+            BoardSlice(0)
+        );
+        assert_eq!(
+            white_attack_table[Rank::Rank2 as usize][File::DFile as usize],
+            BoardSlice(0x8080000)
+        );
+        assert_eq!(
+            white_attack_table[Rank::Rank6 as usize][File::EFile as usize],
+            BoardSlice(0x10000000000000)
+        );
+        assert_eq!(
+            white_attack_table[Rank::Rank8 as usize][File::HFile as usize],
+            BoardSlice(0)
+        );
+        assert_eq!(
+            black_attack_table[Rank::Rank8 as usize][File::AFile as usize],
+            BoardSlice(0)
+        );
+        assert_eq!(
+            black_attack_table[Rank::Rank7 as usize][File::DFile as usize],
+            BoardSlice(0x80800000000)
+        );
+        assert_eq!(
+            black_attack_table[Rank::Rank2 as usize][File::EFile as usize],
+            BoardSlice(0x10)
+        );
+        assert_eq!(
+            black_attack_table[Rank::Rank1 as usize][File::HFile as usize],
+            BoardSlice(0)
+        );
+    }
 
     #[test]
     fn knight_attack_table_valid() {

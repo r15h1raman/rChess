@@ -20,7 +20,7 @@ impl fmt::Display for BoardSlice {
             writeln!(f)?;
         }
         writeln!(f, "\n    a b c d e f g h")?;
-        write!(f, "Number: {:0x}", self.0)?;
+        write!(f, "Number: 0x{:0x}", self.0)?;
         Ok(())
     }
 }
