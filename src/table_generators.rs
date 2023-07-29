@@ -1,5 +1,6 @@
 use crate::utils::board_slice::BoardSlice;
 
+#[allow(clippy::needless_range_loop)]
 pub fn generate_knight_attack_table() -> [[BoardSlice; 8]; 8] {
     let mut attack_table = [[BoardSlice(0); 8]; 8];
 
@@ -54,11 +55,65 @@ pub fn generate_knight_attack_table() -> [[BoardSlice; 8]; 8] {
     attack_table
 }
 
+#[allow(clippy::needless_range_loop)]
+pub fn generate_king_attack_table() -> [[BoardSlice; 8]; 8] {
+    let mut attack_table = [[BoardSlice(0); 8]; 8];
+
+    // N
+    for i in 0..7 {
+        for j in 0..8 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j + 8);
+        }
+    }
+    // NE
+    for i in 0..7 {
+        for j in 0..7 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j + 9);
+        }
+    }
+    // E
+    for i in 0..8 {
+        for j in 0..7 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j + 1);
+        }
+    }
+    // SE
+    for i in 1..8 {
+        for j in 0..7 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j - 7);
+        }
+    }
+    // S
+    for i in 1..8 {
+        for j in 0..8 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j - 8);
+        }
+    }
+    // SW
+    for i in 1..8 {
+        for j in 1..8 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j - 9);
+        }
+    }
+    // W
+    for i in 0..8 {
+        for j in 1..8 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j - 1);
+        }
+    }
+    // NW
+    for i in 0..7 {
+        for j in 1..8 {
+            attack_table[i][j].0 |= 1 << (i * 8 + j + 7);
+        }
+    }
+
+    attack_table
+}
 #[cfg(test)]
 pub mod tests {
-    use crate::utils::enums::{File, Rank};
-
     use super::*;
+    use crate::utils::enums::{File, Rank};
 
     #[test]
     fn knight_attack_table_valid() {
@@ -82,6 +137,31 @@ pub mod tests {
         assert_eq!(
             attack_table[Rank::Rank7 as usize][File::GFile as usize],
             BoardSlice(0x100010a000000000)
+        );
+    }
+
+    #[test]
+    fn king_attack_table_valid() {
+        let attack_table = generate_king_attack_table();
+        assert_eq!(
+            attack_table[Rank::Rank1 as usize][File::AFile as usize],
+            BoardSlice(0x302)
+        );
+        assert_eq!(
+            attack_table[Rank::Rank8 as usize][File::HFile as usize],
+            BoardSlice(0x40c0000000000000)
+        );
+        assert_eq!(
+            attack_table[Rank::Rank4 as usize][File::EFile as usize],
+            BoardSlice(0x3828380000)
+        );
+        assert_eq!(
+            attack_table[Rank::Rank2 as usize][File::BFile as usize],
+            BoardSlice(0x70507)
+        );
+        assert_eq!(
+            attack_table[Rank::Rank7 as usize][File::GFile as usize],
+            BoardSlice(0xe0a0e00000000000)
         );
     }
 }
