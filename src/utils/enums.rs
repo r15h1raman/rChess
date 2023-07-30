@@ -27,7 +27,7 @@ pub enum CastlingRights {
     BlackQueensideCastle = 0b1000,
 }
 
-#[derive(Debug, PartialEq, Eq, EnumString)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumString)]
 #[repr(u8)]
 pub enum Square {
     A1,
