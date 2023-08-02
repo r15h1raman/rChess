@@ -141,6 +141,7 @@ pub fn generate_king_attack_table() -> [BoardSlice; 64] {
 }
 
 pub mod bishop_attack_table;
+pub mod occupancies;
 pub mod rook_attack_table;
 
 #[cfg(test)]
