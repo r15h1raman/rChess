@@ -1,7 +1,4 @@
-use crate::utils::{
-    board_slice::BoardSlice,
-    enums::{Color, Square},
-};
+use crate::utils::{board_slice::BoardSlice, enums::Color};
 
 #[allow(clippy::needless_range_loop)]
 pub fn generate_pawn_attack_table(color: Color) -> [BoardSlice; 64] {
