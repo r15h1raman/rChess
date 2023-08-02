@@ -143,49 +143,8 @@ pub fn generate_king_attack_table() -> [BoardSlice; 64] {
     attack_table
 }
 
-pub fn generate_bishop_attack_mask(square: Square) -> BoardSlice {
-    let mut attack_mask = BoardSlice(0);
-
-    let rank = square as i64 / 8;
-    let file = square as i64 % 8;
-
-    for (i, j) in ((rank + 1)..7).zip((file + 1)..7) {
-        attack_mask.0 |= 1 << (i * 8 + j);
-    }
-    for (i, j) in (1..rank).rev().zip((file + 1)..7) {
-        attack_mask.0 |= 1 << (i * 8 + j);
-    }
-    for (i, j) in (1..rank).rev().zip((1..file).rev()) {
-        attack_mask.0 |= 1 << (i * 8 + j);
-    }
-    for (i, j) in ((rank + 1)..7).zip((1..file).rev()) {
-        attack_mask.0 |= 1 << (i * 8 + j);
-    }
-
-    attack_mask
-}
-
-pub fn generate_rook_attack_mask(square: Square) -> BoardSlice {
-    let mut attack_mask = BoardSlice(0);
-
-    let rank = square as i64 / 8;
-    let file = square as i64 % 8;
-
-    for i in (rank + 1)..7 {
-        attack_mask.0 |= 1 << (i * 8 + file);
-    }
-    for j in (file + 1)..7 {
-        attack_mask.0 |= 1 << (rank * 8 + j);
-    }
-    for i in 1..rank {
-        attack_mask.0 |= 1 << (i * 8 + file);
-    }
-    for j in 1..file {
-        attack_mask.0 |= 1 << (rank * 8 + j);
-    }
-
-    attack_mask
-}
+pub mod bishop_attack_table;
+pub mod rook_attack_table;
 
 #[cfg(test)]
 pub mod tests {
@@ -247,46 +206,6 @@ pub mod tests {
         assert_eq!(
             attack_table[Square::G7 as usize],
             BoardSlice(0xe0a0e00000000000)
-        );
-    }
-
-    #[test]
-    fn bishop_attack_mask_valid() {
-        assert_eq!(
-            generate_bishop_attack_mask(Square::A1),
-            BoardSlice(0x40201008040200)
-        );
-        assert_eq!(
-            generate_bishop_attack_mask(Square::D4),
-            BoardSlice(0x40221400142200)
-        );
-        assert_eq!(
-            generate_bishop_attack_mask(Square::F4),
-            BoardSlice(0x4085000500800)
-        );
-        assert_eq!(
-            generate_bishop_attack_mask(Square::E2),
-            BoardSlice(0x244280000)
-        );
-    }
-
-    #[test]
-    fn rook_attack_mask_valid() {
-        assert_eq!(
-            generate_rook_attack_mask(Square::A1),
-            BoardSlice(0x101010101017e)
-        );
-        assert_eq!(
-            generate_rook_attack_mask(Square::D4),
-            BoardSlice(0x8080876080800)
-        );
-        assert_eq!(
-            generate_rook_attack_mask(Square::F4),
-            BoardSlice(0x2020205e202000)
-        );
-        assert_eq!(
-            generate_rook_attack_mask(Square::E2),
-            BoardSlice(0x10101010106e00)
         );
     }
 }
