@@ -225,6 +225,18 @@ pub fn get_rook_attacks(
     attack_table[square as usize][magic_index]
 }
 
+pub fn get_queen_attacks(
+    square: Square,
+    blockers: BoardSlice,
+    bishop_attack_table: &[[BoardSlice; 512]],
+    rook_attack_table: &[[BoardSlice; 4096]],
+) -> BoardSlice {
+    BoardSlice(
+        get_bishop_attacks(square, blockers, bishop_attack_table).0
+            | get_rook_attacks(square, blockers, rook_attack_table).0,
+    )
+}
+
 #[cfg(test)]
 pub mod tests {
 
@@ -365,6 +377,31 @@ pub mod tests {
         assert_eq!(
             get_rook_attacks(square, blockers, attack_table.as_slice()),
             BoardSlice(0x8080808f7080808)
+        );
+    }
+
+    #[test]
+    fn get_queen_attacks_valid() {
+        let bishop_attack_table = generate_bishop_attack_table();
+        let rook_attack_table = generate_rook_attack_table();
+
+        let square = Square::E4;
+        let blockers = BoardSlice(
+            1 << Square::E2 as u64
+                | 1 << Square::G2 as u64
+                | 1 << Square::G4 as u64
+                | 1 << Square::G6 as u64
+                | 1 << Square::E6 as u64,
+        );
+
+        assert_eq!(
+            get_queen_attacks(
+                square,
+                blockers,
+                bishop_attack_table.as_slice(),
+                rook_attack_table.as_slice()
+            ),
+            BoardSlice(0x10254386f385402)
         );
     }
 }
