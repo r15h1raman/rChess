@@ -1,4 +1,4 @@
-use strum_macros::EnumString;
+use strum_macros::{EnumIter, EnumString, ToString};
 
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u8)]
@@ -27,7 +27,7 @@ pub enum CastlingRights {
     BlackQueensideCastle = 0b1000,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumString)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumString, EnumIter, ToString)]
 #[repr(u8)]
 pub enum Square {
     A1,

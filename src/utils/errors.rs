@@ -21,3 +21,11 @@ pub enum FENParseError {
     #[error("Incorrect symbol found in full move clock.")]
     IncorrectFullMoveClock,
 }
+
+#[derive(Debug, Error, PartialEq)]
+pub enum MagicNumberError {
+    #[error("Piece must be bishop or rook.")]
+    IncorrectPiece,
+    #[error("Magic number was not able to be found. Try changing the seed.")]
+    MagicNumberNotFound,
+}

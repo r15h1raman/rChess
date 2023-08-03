@@ -1,4 +1,25 @@
-use crate::utils::{board_slice::BoardSlice, enums::Color};
+use strum::IntoEnumIterator;
+
+use crate::utils::{
+    board_slice::BoardSlice,
+    enums::{Color, Square},
+};
+
+use self::{
+    bishop_attack_generators::{generate_bishop_attack_mask, generate_bishop_attacks_on_the_fly},
+    magic_number_constants::{
+        BISHOP_ATTACK_MASKS, BISHOP_MAGIC_NUMBERS, BISHOP_MASK_BIT_COUNT, ROOK_ATTACK_MASKS,
+        ROOK_MAGIC_NUMBERS, ROOK_MASK_BIT_COUNT,
+    },
+    occupancy::get_occupancy,
+    rook_attack_generators::{generate_rook_attack_mask, generate_rook_attacks_on_the_fly},
+};
+
+pub mod bishop_attack_generators;
+pub mod magic_number_constants;
+pub mod magic_number_generator;
+pub mod occupancy;
+pub mod rook_attack_generators;
 
 #[allow(clippy::needless_range_loop)]
 pub fn generate_pawn_attack_table(color: Color) -> [BoardSlice; 64] {
@@ -140,12 +161,73 @@ pub fn generate_king_attack_table() -> [BoardSlice; 64] {
     attack_table
 }
 
-pub mod bishop_attack_table;
-pub mod occupancies;
-pub mod rook_attack_table;
+pub fn generate_bishop_attack_table() -> Vec<[BoardSlice; 512]> {
+    let mut attack_table = vec![[BoardSlice(0); 512]; 64];
+
+    for square in Square::iter() {
+        let attack_mask = generate_bishop_attack_mask(square);
+        let relevant_bits = BISHOP_MASK_BIT_COUNT[square as usize];
+
+        for i in 0..(1 << relevant_bits) {
+            let occupancy = get_occupancy(i, relevant_bits, attack_mask);
+            let magic_index = ((occupancy
+                .0
+                .wrapping_mul(BISHOP_MAGIC_NUMBERS[square as usize]))
+                >> (64 - relevant_bits)) as usize;
+
+            attack_table[square as usize][magic_index] =
+                generate_bishop_attacks_on_the_fly(square, occupancy);
+        }
+    }
+    attack_table
+}
+
+pub fn generate_rook_attack_table() -> Vec<[BoardSlice; 4096]> {
+    let mut attack_table = vec![[BoardSlice(0); 4096]; 64];
+
+    for square in Square::iter() {
+        let attack_mask = generate_rook_attack_mask(square);
+        let relevant_bits = ROOK_MASK_BIT_COUNT[square as usize];
+
+        for i in 0..(1 << relevant_bits) {
+            let occupancy = get_occupancy(i, relevant_bits, attack_mask);
+            let magic_index = ((occupancy
+                .0
+                .wrapping_mul(ROOK_MAGIC_NUMBERS[square as usize]))
+                >> (64 - relevant_bits)) as usize;
+
+            attack_table[square as usize][magic_index] =
+                generate_rook_attacks_on_the_fly(square, occupancy);
+        }
+    }
+    attack_table
+}
+
+pub fn get_bishop_attacks(
+    square: Square,
+    blockers: BoardSlice,
+    attack_table: &[[BoardSlice; 512]],
+) -> BoardSlice {
+    let occupancy = blockers.0 & BISHOP_ATTACK_MASKS[square as usize].0;
+    let magic_index = ((occupancy.wrapping_mul(BISHOP_MAGIC_NUMBERS[square as usize]))
+        >> (64 - BISHOP_MASK_BIT_COUNT[square as usize])) as usize;
+    attack_table[square as usize][magic_index]
+}
+
+pub fn get_rook_attacks(
+    square: Square,
+    blockers: BoardSlice,
+    attack_table: &[[BoardSlice; 4096]],
+) -> BoardSlice {
+    let occupancy = blockers.0 & ROOK_ATTACK_MASKS[square as usize].0;
+    let magic_index = ((occupancy.wrapping_mul(ROOK_MAGIC_NUMBERS[square as usize]))
+        >> (64 - ROOK_MASK_BIT_COUNT[square as usize])) as usize;
+    attack_table[square as usize][magic_index]
+}
 
 #[cfg(test)]
 pub mod tests {
+
     use super::*;
     use crate::utils::enums::Square;
 
@@ -204,6 +286,85 @@ pub mod tests {
         assert_eq!(
             attack_table[Square::G7 as usize],
             BoardSlice(0xe0a0e00000000000)
+        );
+    }
+
+    #[test]
+    fn get_bishop_attacks_valid() {
+        let attack_table = generate_bishop_attack_table();
+
+        let square = Square::D3;
+        let blockers =
+            BoardSlice(1 << Square::C2 as u64 | 1 << Square::E2 as u64 | 1 << Square::B5 as u64);
+
+        assert_eq!(
+            get_bishop_attacks(square, blockers, attack_table.as_slice()),
+            BoardSlice(0x80402214001400)
+        );
+
+        let square = Square::E4;
+        let blockers = BoardSlice(
+            1 << Square::E3 as u64
+                | 1 << Square::D4 as u64
+                | 1 << Square::E5 as u64
+                | 1 << Square::F4 as u64,
+        );
+        assert_eq!(
+            get_bishop_attacks(square, blockers, attack_table.as_slice()),
+            BoardSlice(0x182442800284482)
+        );
+
+        let square = Square::C6;
+        let blockers = BoardSlice(
+            1 << Square::E3 as u64
+                | 1 << Square::G2 as u64
+                | 1 << Square::E4 as u64
+                | 1 << Square::B7 as u64,
+        );
+        assert_eq!(
+            get_bishop_attacks(square, blockers, attack_table.as_slice()),
+            BoardSlice(0x100a000a11000000)
+        );
+    }
+
+    #[test]
+    fn get_rook_attacks_valid() {
+        let attack_table = generate_rook_attack_table();
+
+        let square = Square::E4;
+        let blockers = BoardSlice(
+            1 << Square::E3 as u64
+                | 1 << Square::D4 as u64
+                | 1 << Square::F4 as u64
+                | 1 << Square::E7 as u64,
+        );
+        assert_eq!(
+            get_rook_attacks(square, blockers, attack_table.as_slice()),
+            BoardSlice(0x10101028100000)
+        );
+
+        let square = Square::C3;
+        let blockers = BoardSlice(
+            1 << Square::C5 as u64
+                | 1 << Square::C7 as u64
+                | 1 << Square::G7 as u64
+                | 1 << Square::G3 as u64,
+        );
+        assert_eq!(
+            get_rook_attacks(square, blockers, attack_table.as_slice()),
+            BoardSlice(0x4047b0404)
+        );
+
+        let square = Square::D4;
+        let blockers = BoardSlice(
+            1 << Square::C3 as u64
+                | 1 << Square::C5 as u64
+                | 1 << Square::E5 as u64
+                | 1 << Square::E3 as u64,
+        );
+        assert_eq!(
+            get_rook_attacks(square, blockers, attack_table.as_slice()),
+            BoardSlice(0x8080808f7080808)
         );
     }
 }
