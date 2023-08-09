@@ -1,5 +1,7 @@
 use crate::utils::{board_slice::BoardSlice, enums::*, errors::FENParseError};
+use std::fmt;
 use std::str::FromStr;
+use strum::IntoEnumIterator;
 
 macro_rules! bitboard_piece_index {
     ($c: expr, $p: expr) => {
@@ -139,6 +141,68 @@ impl FromStr for Bitboard {
     }
 }
 
+impl fmt::Display for Bitboard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for i in (0..8).rev() {
+            write!(f, "{}  ", i + 1)?;
+            for j in 0..8 {
+                for (board_i, &slice) in self.pieces.iter().enumerate() {
+                    if (slice.0 & (1 << (i * 8 + j))) != 0 {
+                        match board_i {
+                            0 => write!(f, " ♙")?,
+                            1 => write!(f, " ♘")?,
+                            2 => write!(f, " ♗")?,
+                            3 => write!(f, " ♖")?,
+                            4 => write!(f, " ♕")?,
+                            5 => write!(f, " ♔")?,
+                            6 => write!(f, " ♟")?,
+                            7 => write!(f, " ♞")?,
+                            8 => write!(f, " ♝")?,
+                            9 => write!(f, " ♜")?,
+                            10 => write!(f, " ♛")?,
+                            11 => write!(f, " ♚")?,
+                            _ => (),
+                        }
+                    }
+                }
+            }
+            writeln!(f)?;
+        }
+        writeln!(f, "\n    a b c d e f g h\n")?;
+
+        writeln!(f, "To Move: {:?}", self.to_move)?;
+        writeln!(
+            f,
+            "CR: {}",
+            CastlingRights::iter()
+                .map(|cr| {
+                    if self.castling_rights & cr as u8 != 0 {
+                        match cr {
+                            CastlingRights::WhiteKingsideCastle => 'K',
+                            CastlingRights::WhiteQueensideCastle => 'Q',
+                            CastlingRights::BlackKingsideCastle => 'k',
+                            CastlingRights::BlackQueensideCastle => 'q',
+                        }
+                    } else {
+                        '\0'
+                    }
+                })
+                .collect::<String>()
+        )?;
+
+        match self.en_passant_square {
+            Some(square) => writeln!(f, "EP Square: {:?}", square),
+            None => writeln!(f, "EP Square: None"),
+        }?;
+
+        writeln!(
+            f,
+            "FMC: {}, HMC: {}",
+            self.full_move_clock, self.half_move_clock
+        )?;
+        Ok(())
+    }
+}
 #[cfg(test)]
 pub mod tests {
     use super::*;

@@ -1,10 +1,3 @@
-use strum::IntoEnumIterator;
-
-use crate::utils::{
-    board_slice::BoardSlice,
-    enums::{Color, Square},
-};
-
 use self::{
     bishop_attack_generators::{generate_bishop_attack_mask, generate_bishop_attacks_on_the_fly},
     magic_number_constants::{
@@ -14,6 +7,11 @@ use self::{
     occupancy::get_occupancy,
     rook_attack_generators::{generate_rook_attack_mask, generate_rook_attacks_on_the_fly},
 };
+use crate::utils::{
+    board_slice::BoardSlice,
+    enums::{Color, Square},
+};
+use strum::IntoEnumIterator;
 
 pub mod bishop_attack_generators;
 pub mod magic_number_constants;

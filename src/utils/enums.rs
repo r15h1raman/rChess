@@ -1,13 +1,13 @@
-use strum_macros::{EnumIter, EnumString, ToString};
+use strum_macros::{EnumIter, EnumString};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter)]
 #[repr(u8)]
 pub enum Color {
     White,
     Black,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter)]
 #[repr(u8)]
 pub enum Piece {
     Pawn,
@@ -18,7 +18,7 @@ pub enum Piece {
     King,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter)]
 #[repr(u8)]
 pub enum CastlingRights {
     WhiteKingsideCastle = 0b1,
@@ -27,7 +27,7 @@ pub enum CastlingRights {
     BlackQueensideCastle = 0b1000,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumString, EnumIter, ToString)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter, EnumString)]
 #[repr(u8)]
 pub enum Square {
     A1,
@@ -96,7 +96,7 @@ pub enum Square {
     H8,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum File {
     AFile,
@@ -109,7 +109,7 @@ pub enum File {
     HFile,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Rank {
     Rank1,
