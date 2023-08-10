@@ -203,6 +203,7 @@ impl fmt::Display for Bitboard {
         Ok(())
     }
 }
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
