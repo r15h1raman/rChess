@@ -146,8 +146,10 @@ impl fmt::Display for Bitboard {
         for i in (0..8).rev() {
             write!(f, "{}  ", i + 1)?;
             for j in 0..8 {
+                let mut empty = true;
                 for (board_i, &slice) in self.pieces.iter().enumerate() {
                     if (slice.0 & (1 << (i * 8 + j))) != 0 {
+                        empty = false;
                         match board_i {
                             0 => write!(f, " ♙")?,
                             1 => write!(f, " ♘")?,
@@ -164,6 +166,9 @@ impl fmt::Display for Bitboard {
                             _ => (),
                         }
                     }
+                }
+                if empty {
+                    write!(f, " ·")?;
                 }
             }
             writeln!(f)?;
