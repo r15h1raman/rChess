@@ -11,6 +11,9 @@ use super::{
     rook_attack_generators::{generate_rook_attack_mask, generate_rook_attacks_on_the_fly},
 };
 
+// MODULE NOT USED DURING PROGRAM EXECUTION, ONLY HERE FOR DOCUMENTATION. ONLY USED TO CREATE MAGIC NUMBER CONSTANTS.
+
+#[allow(dead_code)]
 pub fn generate_magic_number(square: Square, piece: Piece) -> Result<u64, MagicNumberError> {
     let attack_mask = match piece {
         Piece::Bishop => generate_bishop_attack_mask(square),
@@ -68,10 +71,12 @@ pub fn generate_magic_number(square: Square, piece: Piece) -> Result<u64, MagicN
     Err(MagicNumberError::MagicNumberNotFound)
 }
 
+#[allow(dead_code)]
 pub fn init_magic_number_generator() {
     fastrand::seed(2);
 }
 
+#[allow(dead_code)]
 fn generate_magic_number_candidate() -> u64 {
     fastrand::u64(..) & fastrand::u64(..)
 }
