@@ -20,7 +20,7 @@ pub enum Piece {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter)]
 #[repr(u8)]
-pub enum CastlingRights {
+pub enum CastleMoves {
     WhiteKingsideCastle = 0b1,
     WhiteQueensideCastle = 0b10,
     BlackKingsideCastle = 0b100,

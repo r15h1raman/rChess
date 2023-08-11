@@ -106,10 +106,10 @@ impl FromStr for Bitboard {
         };
 
         let castling_rights = fen_parts[2].chars().try_fold(0, |acc, c| match c {
-            'K' => Ok(acc | CastlingRights::WhiteKingsideCastle as u8),
-            'Q' => Ok(acc | CastlingRights::WhiteQueensideCastle as u8),
-            'k' => Ok(acc | CastlingRights::BlackKingsideCastle as u8),
-            'q' => Ok(acc | CastlingRights::BlackQueensideCastle as u8),
+            'K' => Ok(acc | CastleMoves::WhiteKingsideCastle as u8),
+            'Q' => Ok(acc | CastleMoves::WhiteQueensideCastle as u8),
+            'k' => Ok(acc | CastleMoves::BlackKingsideCastle as u8),
+            'q' => Ok(acc | CastleMoves::BlackQueensideCastle as u8),
             _ => Err(FENParseError::IncorrectCastlingRights),
         })?;
 
@@ -179,14 +179,14 @@ impl fmt::Display for Bitboard {
         writeln!(
             f,
             "CR: {}",
-            CastlingRights::iter()
+            CastleMoves::iter()
                 .map(|cr| {
                     if self.castling_rights & cr as u8 != 0 {
                         match cr {
-                            CastlingRights::WhiteKingsideCastle => 'K',
-                            CastlingRights::WhiteQueensideCastle => 'Q',
-                            CastlingRights::BlackKingsideCastle => 'k',
-                            CastlingRights::BlackQueensideCastle => 'q',
+                            CastleMoves::WhiteKingsideCastle => 'K',
+                            CastleMoves::WhiteQueensideCastle => 'Q',
+                            CastleMoves::BlackKingsideCastle => 'k',
+                            CastleMoves::BlackQueensideCastle => 'q',
                         }
                     } else {
                         '\0'
@@ -235,10 +235,10 @@ pub mod tests {
                     BoardSlice(0x1000000000000000),
                 ],
                 to_move: Color::White,
-                castling_rights: (CastlingRights::WhiteKingsideCastle as u8
-                    | CastlingRights::WhiteQueensideCastle as u8
-                    | CastlingRights::BlackKingsideCastle as u8
-                    | CastlingRights::BlackQueensideCastle as u8),
+                castling_rights: (CastleMoves::WhiteKingsideCastle as u8
+                    | CastleMoves::WhiteQueensideCastle as u8
+                    | CastleMoves::BlackKingsideCastle as u8
+                    | CastleMoves::BlackQueensideCastle as u8),
                 en_passant_square: None,
                 half_move_clock: 0,
                 full_move_clock: 1
@@ -267,10 +267,10 @@ pub mod tests {
                     BoardSlice(0x1000000000000000),
                 ],
                 to_move: Color::Black,
-                castling_rights: (CastlingRights::WhiteKingsideCastle as u8
-                    | CastlingRights::WhiteQueensideCastle as u8
-                    | CastlingRights::BlackKingsideCastle as u8
-                    | CastlingRights::BlackQueensideCastle as u8),
+                castling_rights: (CastleMoves::WhiteKingsideCastle as u8
+                    | CastleMoves::WhiteQueensideCastle as u8
+                    | CastleMoves::BlackKingsideCastle as u8
+                    | CastleMoves::BlackQueensideCastle as u8),
                 en_passant_square: Some(Square::E3),
                 half_move_clock: 1,
                 full_move_clock: 1
