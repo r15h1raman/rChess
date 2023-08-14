@@ -11,6 +11,8 @@ use crate::utils::{
     board_slice::BoardSlice,
     enums::{Color, Square},
 };
+
+use lazy_static::lazy_static;
 use strum::IntoEnumIterator;
 
 mod bishop_attack_generators;
@@ -19,36 +21,15 @@ mod magic_number_generator;
 mod occupancy;
 mod rook_attack_generators;
 
-pub struct AttackTables {
-    white_pawn_move_table: [BoardSlice; 64],
-    black_pawn_move_table: [BoardSlice; 64],
-    white_pawn_attack_table: [BoardSlice; 64],
-    black_pawn_attack_table: [BoardSlice; 64],
-    knight_attack_table: [BoardSlice; 64],
-    king_attack_table: [BoardSlice; 64],
-    bishop_attack_table: Vec<[BoardSlice; 512]>,
-    rook_attack_table: Vec<[BoardSlice; 4096]>,
-}
-
-impl AttackTables {
-    pub fn new() -> AttackTables {
-        AttackTables {
-            white_pawn_move_table: generate_pawn_move_table(Color::White),
-            black_pawn_move_table: generate_pawn_move_table(Color::Black),
-            white_pawn_attack_table: generate_pawn_attack_table(Color::White),
-            black_pawn_attack_table: generate_pawn_attack_table(Color::Black),
-            knight_attack_table: generate_knight_attack_table(),
-            king_attack_table: generate_king_attack_table(),
-            bishop_attack_table: generate_bishop_attack_table(),
-            rook_attack_table: generate_rook_attack_table(),
-        }
-    }
-}
-
-impl Default for AttackTables {
-    fn default() -> Self {
-        AttackTables::new()
-    }
+lazy_static! {
+    static ref WHITE_PAWN_MOVE_TABLE: [BoardSlice; 64] = generate_pawn_move_table(Color::White);
+    static ref BLACK_PAWN_MOVE_TABLE: [BoardSlice; 64] = generate_pawn_move_table(Color::Black);
+    static ref WHITE_PAWN_ATTACK_TABLE: [BoardSlice; 64] = generate_pawn_attack_table(Color::White);
+    static ref BLACK_PAWN_ATTACK_TABLE: [BoardSlice; 64] = generate_pawn_attack_table(Color::Black);
+    static ref KNIGHT_ATTACK_TABLE: [BoardSlice; 64] = generate_knight_attack_table();
+    static ref KING_ATTACK_TABLE: [BoardSlice; 64] = generate_king_attack_table();
+    static ref BISHOP_ATTACK_TABLE: Vec<[BoardSlice; 512]> = generate_bishop_attack_table();
+    static ref ROOK_ATTACK_TABLE: Vec<[BoardSlice; 4096]> = generate_rook_attack_table();
 }
 
 #[allow(clippy::needless_range_loop)]
@@ -262,37 +243,22 @@ fn generate_rook_attack_table() -> Vec<[BoardSlice; 4096]> {
     attack_table
 }
 
-pub fn get_bishop_attacks(
-    square: Square,
-    blockers: BoardSlice,
-    attack_table: &AttackTables,
-) -> BoardSlice {
+pub fn get_bishop_attacks(square: Square, blockers: BoardSlice) -> BoardSlice {
     let occupancy = blockers.0 & BISHOP_ATTACK_MASKS[square as usize].0;
     let magic_index = ((occupancy.wrapping_mul(BISHOP_MAGIC_NUMBERS[square as usize]))
         >> (64 - BISHOP_MASK_BIT_COUNT[square as usize])) as usize;
-    attack_table.bishop_attack_table[square as usize][magic_index]
+    BISHOP_ATTACK_TABLE[square as usize][magic_index]
 }
 
-pub fn get_rook_attacks(
-    square: Square,
-    blockers: BoardSlice,
-    attack_table: &AttackTables,
-) -> BoardSlice {
+pub fn get_rook_attacks(square: Square, blockers: BoardSlice) -> BoardSlice {
     let occupancy = blockers.0 & ROOK_ATTACK_MASKS[square as usize].0;
     let magic_index = ((occupancy.wrapping_mul(ROOK_MAGIC_NUMBERS[square as usize]))
         >> (64 - ROOK_MASK_BIT_COUNT[square as usize])) as usize;
-    attack_table.rook_attack_table[square as usize][magic_index]
+    ROOK_ATTACK_TABLE[square as usize][magic_index]
 }
 
-pub fn get_queen_attacks(
-    square: Square,
-    blockers: BoardSlice,
-    attack_table: &AttackTables,
-) -> BoardSlice {
-    BoardSlice(
-        get_bishop_attacks(square, blockers, attack_table).0
-            | get_rook_attacks(square, blockers, attack_table).0,
-    )
+pub fn get_queen_attacks(square: Square, blockers: BoardSlice) -> BoardSlice {
+    BoardSlice(get_bishop_attacks(square, blockers).0 | get_rook_attacks(square, blockers).0)
 }
 
 #[cfg(test)]
@@ -388,14 +354,12 @@ pub mod tests {
 
     #[test]
     fn get_bishop_attacks_valid() {
-        let attack_table = AttackTables::new();
-
         let square = Square::D3;
         let blockers =
             BoardSlice(1 << Square::C2 as u64 | 1 << Square::E2 as u64 | 1 << Square::B5 as u64);
 
         assert_eq!(
-            get_bishop_attacks(square, blockers, &attack_table),
+            get_bishop_attacks(square, blockers),
             BoardSlice(0x80402214001400)
         );
 
@@ -407,7 +371,7 @@ pub mod tests {
                 | 1 << Square::F4 as u64,
         );
         assert_eq!(
-            get_bishop_attacks(square, blockers, &attack_table),
+            get_bishop_attacks(square, blockers),
             BoardSlice(0x182442800284482)
         );
 
@@ -419,15 +383,13 @@ pub mod tests {
                 | 1 << Square::B7 as u64,
         );
         assert_eq!(
-            get_bishop_attacks(square, blockers, &attack_table),
+            get_bishop_attacks(square, blockers),
             BoardSlice(0x100a000a11000000)
         );
     }
 
     #[test]
     fn get_rook_attacks_valid() {
-        let attack_table = AttackTables::new();
-
         let square = Square::E4;
         let blockers = BoardSlice(
             1 << Square::E3 as u64
@@ -436,7 +398,7 @@ pub mod tests {
                 | 1 << Square::E7 as u64,
         );
         assert_eq!(
-            get_rook_attacks(square, blockers, &attack_table),
+            get_rook_attacks(square, blockers),
             BoardSlice(0x10101028100000)
         );
 
@@ -447,10 +409,7 @@ pub mod tests {
                 | 1 << Square::G7 as u64
                 | 1 << Square::G3 as u64,
         );
-        assert_eq!(
-            get_rook_attacks(square, blockers, &attack_table),
-            BoardSlice(0x4047b0404)
-        );
+        assert_eq!(get_rook_attacks(square, blockers), BoardSlice(0x4047b0404));
 
         let square = Square::D4;
         let blockers = BoardSlice(
@@ -460,15 +419,13 @@ pub mod tests {
                 | 1 << Square::E3 as u64,
         );
         assert_eq!(
-            get_rook_attacks(square, blockers, &attack_table),
+            get_rook_attacks(square, blockers),
             BoardSlice(0x8080808f7080808)
         );
     }
 
     #[test]
     fn get_queen_attacks_valid() {
-        let attack_table = AttackTables::new();
-
         let square = Square::E4;
         let blockers = BoardSlice(
             1 << Square::E2 as u64
@@ -479,7 +436,7 @@ pub mod tests {
         );
 
         assert_eq!(
-            get_queen_attacks(square, blockers, &attack_table),
+            get_queen_attacks(square, blockers),
             BoardSlice(0x10254386f385402)
         );
     }
