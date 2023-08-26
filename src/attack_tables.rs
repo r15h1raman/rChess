@@ -243,6 +243,28 @@ fn generate_rook_attack_table() -> Vec<[BoardSlice; 4096]> {
     attack_table
 }
 
+pub fn get_pawn_moves(color: Color, square: Square) -> BoardSlice {
+    match color {
+        Color::White => WHITE_PAWN_MOVE_TABLE[square as usize],
+        Color::Black => BLACK_PAWN_MOVE_TABLE[square as usize],
+    }
+}
+
+pub fn get_pawn_attacks(color: Color, square: Square) -> BoardSlice {
+    match color {
+        Color::White => WHITE_PAWN_ATTACK_TABLE[square as usize],
+        Color::Black => BLACK_PAWN_ATTACK_TABLE[square as usize],
+    }
+}
+
+pub fn get_knight_attacks(square: Square) -> BoardSlice {
+    KNIGHT_ATTACK_TABLE[square as usize]
+}
+
+pub fn get_king_attacks(square: Square) -> BoardSlice {
+    KING_ATTACK_TABLE[square as usize]
+}
+
 pub fn get_bishop_attacks(square: Square, blockers: BoardSlice) -> BoardSlice {
     let occupancy = blockers.0 & BISHOP_ATTACK_MASKS[square as usize].0;
     let magic_index = ((occupancy.wrapping_mul(BISHOP_MAGIC_NUMBERS[square as usize]))
@@ -269,87 +291,78 @@ pub mod tests {
 
     #[test]
     fn pawn_move_table_valid() {
-        let white_move_table = generate_pawn_move_table(Color::White);
-        let black_move_table = generate_pawn_move_table(Color::Black);
-        assert_eq!(white_move_table[Square::A1 as usize], BoardSlice(0));
-        assert_eq!(white_move_table[Square::D2 as usize], BoardSlice(0x8080000));
+        assert_eq!(get_pawn_moves(Color::White, Square::A1), BoardSlice(0));
         assert_eq!(
-            white_move_table[Square::E6 as usize],
+            get_pawn_moves(Color::White, Square::D2),
+            BoardSlice(0x8080000)
+        );
+        assert_eq!(
+            get_pawn_moves(Color::White, Square::E6),
             BoardSlice(0x10000000000000)
         );
-        assert_eq!(white_move_table[Square::H8 as usize], BoardSlice(0));
+        assert_eq!(get_pawn_moves(Color::White, Square::H8), BoardSlice(0));
 
-        assert_eq!(black_move_table[Square::A8 as usize], BoardSlice(0));
+        assert_eq!(get_pawn_moves(Color::Black, Square::A8), BoardSlice(0));
         assert_eq!(
-            black_move_table[Square::D7 as usize],
+            get_pawn_moves(Color::Black, Square::D7),
             BoardSlice(0x80800000000)
         );
-        assert_eq!(black_move_table[Square::E3 as usize], BoardSlice(0x1000));
-        assert_eq!(black_move_table[Square::H1 as usize], BoardSlice(0));
+        assert_eq!(get_pawn_moves(Color::Black, Square::E3), BoardSlice(0x1000));
+        assert_eq!(get_pawn_moves(Color::Black, Square::H1), BoardSlice(0));
     }
 
     #[test]
     fn pawn_attack_table_valid() {
-        let white_attack_table = generate_pawn_attack_table(Color::White);
-        let black_attack_table = generate_pawn_attack_table(Color::Black);
-        assert_eq!(white_attack_table[Square::A1 as usize], BoardSlice(0));
-        assert_eq!(white_attack_table[Square::A2 as usize], BoardSlice(0x20000));
+        assert_eq!(get_pawn_attacks(Color::White, Square::A1), BoardSlice(0));
         assert_eq!(
-            white_attack_table[Square::D4 as usize],
+            get_pawn_attacks(Color::White, Square::A2),
+            BoardSlice(0x20000)
+        );
+        assert_eq!(
+            get_pawn_attacks(Color::White, Square::D4),
             BoardSlice(0x1400000000)
         );
         assert_eq!(
-            white_attack_table[Square::H6 as usize],
+            get_pawn_attacks(Color::White, Square::H6),
             BoardSlice(0x40000000000000)
         );
-        assert_eq!(white_attack_table[Square::H8 as usize], BoardSlice(0));
+        assert_eq!(get_pawn_attacks(Color::White, Square::H8), BoardSlice(0));
 
-        assert_eq!(black_attack_table[Square::A8 as usize], BoardSlice(0));
+        assert_eq!(get_pawn_attacks(Color::Black, Square::A8), BoardSlice(0));
         assert_eq!(
-            black_attack_table[Square::A7 as usize],
+            get_pawn_attacks(Color::Black, Square::A7),
             BoardSlice(0x20000000000)
         );
         assert_eq!(
-            black_attack_table[Square::D5 as usize],
+            get_pawn_attacks(Color::Black, Square::D5),
             BoardSlice(0x14000000)
         );
-        assert_eq!(black_attack_table[Square::H3 as usize], BoardSlice(0x4000));
-        assert_eq!(black_attack_table[Square::H1 as usize], BoardSlice(0));
+        assert_eq!(
+            get_pawn_attacks(Color::Black, Square::H3),
+            BoardSlice(0x4000)
+        );
+        assert_eq!(get_pawn_attacks(Color::Black, Square::H1), BoardSlice(0));
     }
 
     #[test]
     fn knight_attack_table_valid() {
-        let attack_table = generate_knight_attack_table();
-        assert_eq!(attack_table[Square::A1 as usize], BoardSlice(0x20400));
+        assert_eq!(get_knight_attacks(Square::A1), BoardSlice(0x20400));
+        assert_eq!(get_knight_attacks(Square::H8), BoardSlice(0x20400000000000));
+        assert_eq!(get_knight_attacks(Square::E4), BoardSlice(0x284400442800));
+        assert_eq!(get_knight_attacks(Square::B2), BoardSlice(0x5080008));
         assert_eq!(
-            attack_table[Square::H8 as usize],
-            BoardSlice(0x20400000000000)
-        );
-        assert_eq!(
-            attack_table[Square::E4 as usize],
-            BoardSlice(0x284400442800)
-        );
-        assert_eq!(attack_table[Square::B2 as usize], BoardSlice(0x5080008));
-        assert_eq!(
-            attack_table[Square::G7 as usize],
+            get_knight_attacks(Square::G7),
             BoardSlice(0x100010a000000000)
         );
     }
 
     #[test]
     fn king_attack_table_valid() {
-        let attack_table = generate_king_attack_table();
-        assert_eq!(attack_table[Square::A1 as usize], BoardSlice(0x302));
-        assert_eq!(
-            attack_table[Square::H8 as usize],
-            BoardSlice(0x40c0000000000000)
-        );
-        assert_eq!(attack_table[Square::E4 as usize], BoardSlice(0x3828380000));
-        assert_eq!(attack_table[Square::B2 as usize], BoardSlice(0x70507));
-        assert_eq!(
-            attack_table[Square::G7 as usize],
-            BoardSlice(0xe0a0e00000000000)
-        );
+        assert_eq!(get_king_attacks(Square::A1), BoardSlice(0x302));
+        assert_eq!(get_king_attacks(Square::H8), BoardSlice(0x40c0000000000000));
+        assert_eq!(get_king_attacks(Square::E4), BoardSlice(0x3828380000));
+        assert_eq!(get_king_attacks(Square::B2), BoardSlice(0x70507));
+        assert_eq!(get_king_attacks(Square::G7), BoardSlice(0xe0a0e00000000000));
     }
 
     #[test]
