@@ -242,7 +242,7 @@ pub mod tests {
     use crate::utils::errors::FENParseError;
 
     #[test]
-    fn get_board_slice() {
+    fn test_get_board_slice() {
         let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         let bitboard = position_fen.parse::<Bitboard>().unwrap();
         assert_eq!(
@@ -257,7 +257,7 @@ pub mod tests {
     }
 
     #[test]
-    fn get_all_pieces() {
+    fn test_get_all_pieces() {
         let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         let bitboard = position_fen.parse::<Bitboard>().unwrap();
 
@@ -265,7 +265,7 @@ pub mod tests {
     }
 
     #[test]
-    fn get_color_pieces() {
+    fn test_get_color_pieces() {
         let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         let bitboard = position_fen.parse::<Bitboard>().unwrap();
 
@@ -280,7 +280,7 @@ pub mod tests {
     }
 
     #[test]
-    fn from_str_valid_1() {
+    fn test_from_str_valid_1() {
         let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         assert_eq!(
             position_fen.parse::<Bitboard>(),
@@ -312,7 +312,7 @@ pub mod tests {
     }
 
     #[test]
-    fn from_str_valid_2() {
+    fn test_from_str_valid_2() {
         let position_fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 1 1";
         assert_eq!(
             position_fen.parse::<Bitboard>(),
@@ -344,7 +344,7 @@ pub mod tests {
     }
 
     #[test]
-    fn from_str_errors() {
+    fn test_from_str_errors() {
         let position_fen = "1 2 3 4 5";
         assert_eq!(
             position_fen.parse::<Bitboard>(),

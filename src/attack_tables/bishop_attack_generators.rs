@@ -60,7 +60,7 @@ pub fn generate_bishop_attacks_on_the_fly(square: Square, blockers: BoardSlice) 
 pub mod tests {
     use super::*;
     #[test]
-    fn bishop_attack_mask_valid() {
+    fn test_bishop_attack_mask() {
         assert_eq!(
             generate_bishop_attack_mask(Square::A1),
             BoardSlice(0x40201008040200)
@@ -80,7 +80,7 @@ pub mod tests {
     }
 
     #[test]
-    fn bishop_attacks_on_the_fly_valid() {
+    fn test_bishop_attacks_on_the_fly() {
         assert_eq!(
             generate_bishop_attacks_on_the_fly(
                 Square::D4,

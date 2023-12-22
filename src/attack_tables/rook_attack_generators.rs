@@ -61,7 +61,7 @@ pub mod tests {
     use super::*;
 
     #[test]
-    fn rook_attack_mask_valid() {
+    fn test_rook_attack_mask() {
         assert_eq!(
             generate_rook_attack_mask(Square::A1),
             BoardSlice(0x101010101017e)
@@ -81,7 +81,7 @@ pub mod tests {
     }
 
     #[test]
-    fn rook_attacks_on_the_fly_valid() {
+    fn test_rook_attacks_on_the_fly() {
         assert_eq!(
             generate_rook_attacks_on_the_fly(
                 Square::D4,

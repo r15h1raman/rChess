@@ -290,7 +290,7 @@ pub mod tests {
     use crate::utils::enums::Square;
 
     #[test]
-    fn pawn_move_table_valid() {
+    fn test_pawn_move_table() {
         assert_eq!(get_pawn_moves(Color::White, Square::A1), BoardSlice(0));
         assert_eq!(
             get_pawn_moves(Color::White, Square::D2),
@@ -312,7 +312,7 @@ pub mod tests {
     }
 
     #[test]
-    fn pawn_attack_table_valid() {
+    fn test_pawn_attack_table() {
         assert_eq!(get_pawn_attacks(Color::White, Square::A1), BoardSlice(0));
         assert_eq!(
             get_pawn_attacks(Color::White, Square::A2),
@@ -345,7 +345,7 @@ pub mod tests {
     }
 
     #[test]
-    fn knight_attack_table_valid() {
+    fn test_knight_attack_table() {
         assert_eq!(get_knight_attacks(Square::A1), BoardSlice(0x20400));
         assert_eq!(get_knight_attacks(Square::H8), BoardSlice(0x20400000000000));
         assert_eq!(get_knight_attacks(Square::E4), BoardSlice(0x284400442800));
@@ -357,7 +357,7 @@ pub mod tests {
     }
 
     #[test]
-    fn king_attack_table_valid() {
+    fn test_king_attack_table() {
         assert_eq!(get_king_attacks(Square::A1), BoardSlice(0x302));
         assert_eq!(get_king_attacks(Square::H8), BoardSlice(0x40c0000000000000));
         assert_eq!(get_king_attacks(Square::E4), BoardSlice(0x3828380000));
@@ -366,7 +366,7 @@ pub mod tests {
     }
 
     #[test]
-    fn get_bishop_attacks_valid() {
+    fn test_get_bishop_attacks() {
         let square = Square::D3;
         let blockers =
             BoardSlice(1 << Square::C2 as u64 | 1 << Square::E2 as u64 | 1 << Square::B5 as u64);
@@ -402,7 +402,7 @@ pub mod tests {
     }
 
     #[test]
-    fn get_rook_attacks_valid() {
+    fn test_get_rook_attacks() {
         let square = Square::E4;
         let blockers = BoardSlice(
             1 << Square::E3 as u64
@@ -438,7 +438,7 @@ pub mod tests {
     }
 
     #[test]
-    fn get_queen_attacks_valid() {
+    fn test_get_queen_attacks() {
         let square = Square::E4;
         let blockers = BoardSlice(
             1 << Square::E2 as u64

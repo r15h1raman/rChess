@@ -20,7 +20,7 @@ pub mod tests {
     use super::*;
 
     #[test]
-    fn get_occupancy_valid() {
+    fn test_get_occupancy() {
         assert_eq!(
             get_occupancy(3, 4, BoardSlice(0b110001100)),
             BoardSlice(0b1100)
