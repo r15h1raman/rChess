@@ -11,16 +11,43 @@ macro_rules! bitboard_piece_index {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Bitboard {
-    pieces: [BoardSlice; 12],
+    pub pieces: [BoardSlice; 12],
 
-    to_move: Color,
+    pub to_move: Color,
 
-    castling_rights: u8,
+    pub castling_rights: u8,
 
-    en_passant_square: Option<Square>,
+    pub en_passant_square: Option<Square>,
 
-    half_move_clock: usize,
-    full_move_clock: usize,
+    pub half_move_clock: usize,
+    pub full_move_clock: usize,
+}
+
+impl Bitboard {
+    pub fn get_board_slice(&self, color: Color, piece: Piece) -> BoardSlice {
+        self.pieces[bitboard_piece_index!(color, piece)]
+    }
+
+    pub fn get_all_pieces(&self) -> BoardSlice {
+        self.pieces
+            .iter()
+            .fold(BoardSlice(0), |acc, &x| BoardSlice(acc.0 | x.0))
+    }
+
+    pub fn get_color_pieces(&self, color: Color) -> BoardSlice {
+        match color {
+            Color::White => self
+                .pieces
+                .iter()
+                .take(6)
+                .fold(BoardSlice(0), |acc, &x| BoardSlice(acc.0 | x.0)),
+            Color::Black => self
+                .pieces
+                .iter()
+                .skip(6)
+                .fold(BoardSlice(0), |acc, &x| BoardSlice(acc.0 | x.0)),
+        }
+    }
 }
 
 impl FromStr for Bitboard {
@@ -213,6 +240,44 @@ impl fmt::Display for Bitboard {
 pub mod tests {
     use super::*;
     use crate::utils::errors::FENParseError;
+
+    #[test]
+    fn get_board_slice() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+        assert_eq!(
+            bitboard.get_board_slice(Color::White, Piece::Rook),
+            BoardSlice(0x0000000000000081)
+        );
+
+        assert_eq!(
+            bitboard.get_board_slice(Color::Black, Piece::Pawn),
+            BoardSlice(0x00FF000000000000)
+        );
+    }
+
+    #[test]
+    fn get_all_pieces() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(bitboard.get_all_pieces(), BoardSlice(0xFFFF00000000FFFF));
+    }
+
+    #[test]
+    fn get_color_pieces() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(
+            bitboard.get_color_pieces(Color::White),
+            BoardSlice(0x000000000000FFFF)
+        );
+        assert_eq!(
+            bitboard.get_color_pieces(Color::Black),
+            BoardSlice(0xFFFF000000000000)
+        );
+    }
 
     #[test]
     fn from_str_valid_1() {
