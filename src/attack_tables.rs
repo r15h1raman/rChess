@@ -66,7 +66,7 @@ fn generate_pawn_attack_table(color: Color) -> [BoardSlice; 64] {
     let mut attack_table = [BoardSlice(0); 64];
     match color {
         Color::White => {
-            for i in 1..7 {
+            for i in 0..7 {
                 for j in 0..7 {
                     attack_table[i * 8 + j].0 |= 1 << (i * 8 + j + 9);
                 }
@@ -76,7 +76,7 @@ fn generate_pawn_attack_table(color: Color) -> [BoardSlice; 64] {
             }
         }
         Color::Black => {
-            for i in 1..7 {
+            for i in 1..8 {
                 for j in 0..7 {
                     attack_table[i * 8 + j].0 |= 1 << (i * 8 + j - 7);
                 }
@@ -313,7 +313,10 @@ pub mod tests {
 
     #[test]
     fn test_pawn_attack_table() {
-        assert_eq!(get_pawn_attacks(Color::White, Square::A1), BoardSlice(0));
+        assert_eq!(
+            get_pawn_attacks(Color::White, Square::A1),
+            BoardSlice(0x200)
+        );
         assert_eq!(
             get_pawn_attacks(Color::White, Square::A2),
             BoardSlice(0x20000)
@@ -328,7 +331,10 @@ pub mod tests {
         );
         assert_eq!(get_pawn_attacks(Color::White, Square::H8), BoardSlice(0));
 
-        assert_eq!(get_pawn_attacks(Color::Black, Square::A8), BoardSlice(0));
+        assert_eq!(
+            get_pawn_attacks(Color::Black, Square::A8),
+            BoardSlice(0x2000000000000)
+        );
         assert_eq!(
             get_pawn_attacks(Color::Black, Square::A7),
             BoardSlice(0x20000000000)
