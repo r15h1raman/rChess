@@ -1,4 +1,9 @@
+use crate::attack_tables::{
+    get_bishop_attacks, get_king_attacks, get_knight_attacks, get_pawn_attacks, get_queen_attacks,
+    get_rook_attacks,
+};
 use crate::utils::{board_slice::BoardSlice, enums::*, errors::FENParseError};
+use int_enum::IntEnum;
 use std::fmt;
 use std::str::FromStr;
 use strum::IntoEnumIterator;
@@ -24,7 +29,7 @@ pub struct Bitboard {
 }
 
 impl Bitboard {
-    pub fn get_board_slice(&self, color: Color, piece: Piece) -> BoardSlice {
+    pub fn get_piece(&self, color: Color, piece: Piece) -> BoardSlice {
         self.pieces[bitboard_piece_index!(color, piece)]
     }
 
@@ -47,6 +52,40 @@ impl Bitboard {
                 .skip(6)
                 .fold(BoardSlice(0), |acc, &x| BoardSlice(acc.0 | x.0)),
         }
+    }
+
+    pub fn is_square_attacked(&self, color: Color, square: Square) -> bool {
+        ((get_pawn_attacks(
+            match color {
+                Color::White => Color::Black,
+                Color::Black => Color::White,
+            },
+            square,
+        )
+        .0 & self.get_piece(color, Piece::Pawn).0)
+            | (get_knight_attacks(square).0 & self.get_piece(color, Piece::Knight).0)
+            | (get_bishop_attacks(square, self.get_all_pieces()).0
+                & self.get_piece(color, Piece::Bishop).0)
+            | (get_rook_attacks(square, self.get_all_pieces()).0
+                & self.get_piece(color, Piece::Rook).0)
+            | (get_queen_attacks(square, self.get_all_pieces()).0
+                & self.get_piece(color, Piece::Queen).0)
+            | (get_king_attacks(square).0 & self.get_piece(color, Piece::King).0))
+            != 0
+    }
+
+    pub fn get_king_square(&self, color: Color) -> Square {
+        Square::from_int(self.get_piece(color, Piece::King).0.trailing_zeros() as u8).unwrap()
+    }
+
+    pub fn is_king_in_check(&self, color: Color) -> bool {
+        self.is_square_attacked(
+            match color {
+                Color::White => Color::Black,
+                Color::Black => Color::White,
+            },
+            self.get_king_square(color),
+        )
     }
 }
 
@@ -246,12 +285,12 @@ pub mod tests {
         let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         let bitboard = position_fen.parse::<Bitboard>().unwrap();
         assert_eq!(
-            bitboard.get_board_slice(Color::White, Piece::Rook),
+            bitboard.get_piece(Color::White, Piece::Rook),
             BoardSlice(0x0000000000000081)
         );
 
         assert_eq!(
-            bitboard.get_board_slice(Color::Black, Piece::Pawn),
+            bitboard.get_piece(Color::Black, Piece::Pawn),
             BoardSlice(0x00FF000000000000)
         );
     }
@@ -277,6 +316,52 @@ pub mod tests {
             bitboard.get_color_pieces(Color::Black),
             BoardSlice(0xFFFF000000000000)
         );
+    }
+
+    #[test]
+    fn test_get_king_square() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(bitboard.get_king_square(Color::White), Square::E1);
+        assert_eq!(bitboard.get_king_square(Color::Black), Square::E8);
+    }
+
+    #[test]
+    fn test_is_square_attacked() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(bitboard.is_square_attacked(Color::White, Square::E3), true);
+        assert_eq!(bitboard.is_square_attacked(Color::White, Square::E4), false);
+
+        assert_eq!(bitboard.is_square_attacked(Color::Black, Square::E6), true);
+        assert_eq!(bitboard.is_square_attacked(Color::Black, Square::E5), false);
+
+        assert_eq!(bitboard.is_square_attacked(Color::White, Square::E1), true);
+
+        let position_fen = "k6q/8/8/8/7R/8/8/K6B w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(bitboard.is_square_attacked(Color::White, Square::D5), true);
+        assert_eq!(bitboard.is_square_attacked(Color::White, Square::A3), false);
+
+        assert_eq!(bitboard.is_square_attacked(Color::Black, Square::A7), true);
+        assert_eq!(bitboard.is_square_attacked(Color::Black, Square::H1), false);
+    }
+
+    #[test]
+    fn test_is_king_in_check() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(bitboard.is_king_in_check(Color::White), false);
+
+        let position_fen = "k6q/8/8/8/7R/8/8/K6B w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(bitboard.is_king_in_check(Color::White), true);
+        assert_eq!(bitboard.is_king_in_check(Color::Black), true);
     }
 
     #[test]
