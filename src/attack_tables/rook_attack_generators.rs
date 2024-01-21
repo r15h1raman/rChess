@@ -3,8 +3,8 @@ use crate::utils::{board_slice::BoardSlice, enums::Square};
 pub fn generate_rook_attack_mask(square: Square) -> BoardSlice {
     let mut attack_mask = BoardSlice(0);
 
-    let rank = square as i64 / 8;
-    let file = square as i64 % 8;
+    let rank = square as usize / 8;
+    let file = square as usize % 8;
 
     for i in (rank + 1)..7 {
         attack_mask.0 |= 1 << (i * 8 + file);
@@ -25,8 +25,8 @@ pub fn generate_rook_attack_mask(square: Square) -> BoardSlice {
 pub fn generate_rook_attacks_on_the_fly(square: Square, blockers: BoardSlice) -> BoardSlice {
     let mut attacks = BoardSlice(0);
 
-    let rank = square as i64 / 8;
-    let file = square as i64 % 8;
+    let rank = square as usize / 8;
+    let file = square as usize % 8;
 
     for i in (rank + 1)..8 {
         attacks.0 |= 1 << (i * 8 + file);
@@ -86,7 +86,9 @@ pub mod tests {
             generate_rook_attacks_on_the_fly(
                 Square::D4,
                 BoardSlice(
-                    (1 << Square::A4 as u64) | (1 << Square::D2 as u64) | (1 << Square::G4 as u64)
+                    (1 << Square::A4 as usize)
+                        | (1 << Square::D2 as usize)
+                        | (1 << Square::G4 as usize)
                 )
             ),
             BoardSlice(0x808080877080800)
@@ -96,7 +98,9 @@ pub mod tests {
             generate_rook_attacks_on_the_fly(
                 Square::F3,
                 BoardSlice(
-                    (1 << Square::F2 as u64) | (1 << Square::G3 as u64) | (1 << Square::F4 as u64)
+                    (1 << Square::F2 as usize)
+                        | (1 << Square::G3 as usize)
+                        | (1 << Square::F4 as usize)
                 )
             ),
             BoardSlice(0x205f2000)
