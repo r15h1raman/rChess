@@ -8,13 +8,14 @@ use std::fmt;
 use std::str::FromStr;
 use strum::IntoEnumIterator;
 
+#[macro_export]
 macro_rules! bitboard_piece_index {
     ($c: expr, $p: expr) => {
         ($c as usize) * 6 + ($p as usize)
     };
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Bitboard {
     pub pieces: [BoardSlice; 12],
 
@@ -55,14 +56,7 @@ impl Bitboard {
     }
 
     pub fn is_square_attacked(&self, color: Color, square: Square) -> bool {
-        ((get_pawn_attacks(
-            match color {
-                Color::White => Color::Black,
-                Color::Black => Color::White,
-            },
-            square,
-        )
-        .0 & self.get_piece(color, Piece::Pawn).0)
+        ((get_pawn_attacks(color.opposite(), square).0 & self.get_piece(color, Piece::Pawn).0)
             | (get_knight_attacks(square).0 & self.get_piece(color, Piece::Knight).0)
             | (get_bishop_attacks(square, self.get_all_pieces()).0
                 & self.get_piece(color, Piece::Bishop).0)
@@ -79,13 +73,71 @@ impl Bitboard {
     }
 
     pub fn is_king_in_check(&self, color: Color) -> bool {
-        self.is_square_attacked(
-            match color {
-                Color::White => Color::Black,
-                Color::Black => Color::White,
-            },
-            self.get_king_square(color),
-        )
+        self.is_square_attacked(color.opposite(), self.get_king_square(color))
+    }
+
+    pub fn add_piece(&mut self, color: Color, piece: Piece, square: Square) {
+        self.pieces[bitboard_piece_index!(color, piece)].0 |= 1 << square as usize;
+    }
+
+    pub fn remove_piece(&mut self, color: Color, piece: Piece, square: Square) {
+        self.pieces[bitboard_piece_index!(color, piece)].0 &= !(1 << square as usize);
+    }
+
+    pub fn move_piece(&mut self, color: Color, piece: Piece, orig: Square, dest: Square) {
+        self.pieces[bitboard_piece_index!(color, piece)].0 &= !(1 << orig as usize);
+        self.pieces[bitboard_piece_index!(color, piece)].0 |= 1 << dest as usize;
+    }
+
+    pub fn toggle_move(&mut self) {
+        self.to_move = self.to_move.opposite();
+    }
+
+    pub fn remove_castling_right(&mut self, cm: CastleMoves) {
+        self.castling_rights &= !(cm as u8);
+    }
+
+    pub fn to_str(&self) -> String {
+        let mut fen = String::new();
+
+        for i in (0..8).rev() {
+            let mut blank_spaces = 0;
+            for j in 0..8 {
+                let mut found_piece = false;
+                for color in Color::iter() {
+                    for piece in Piece::iter() {
+                        if self.get_piece(color, piece).0 & (1 << (i * 8 + j)) != 0 {
+                            let piece_char = match piece {
+                                Piece::Pawn => 'p',
+                                Piece::Knight => 'n',
+                                Piece::Bishop => 'b',
+                                Piece::Rook => 'r',
+                                Piece::Queen => 'q',
+                                Piece::King => 'k',
+                            };
+                            if blank_spaces != 0 {
+                                fen.push_str(&format!("{}", blank_spaces));
+                                blank_spaces = 0;
+                            }
+                            fen.push(match color {
+                                Color::White => piece_char.to_ascii_uppercase(),
+                                Color::Black => piece_char,
+                            });
+                            found_piece = true;
+                        }
+                    }
+                }
+                if !found_piece {
+                    blank_spaces += 1;
+                }
+            }
+            if blank_spaces != 0 {
+                fen.push_str(&format!("{}", blank_spaces));
+            }
+            fen.push('/');
+        }
+        fen.pop();
+        fen
     }
 }
 
@@ -110,6 +162,7 @@ impl FromStr for Bitboard {
             .enumerate()
             .try_for_each::<_, Result<(), FENParseError>>(|(row_index, &row)| {
                 match row.chars().try_fold(row_index * 8, |acc, c| {
+                    println!("{}", c);
                     if acc >= (row_index + 1) * 8 {
                         return Err(FENParseError::IncorrectBoardRowLength(row_index + 1));
                     }
@@ -277,11 +330,13 @@ impl fmt::Display for Bitboard {
 
 #[cfg(test)]
 pub mod tests {
+    use std::task::Wake;
+
     use super::*;
     use crate::utils::errors::FENParseError;
 
     #[test]
-    fn test_get_board_slice() {
+    fn test_get_piece() {
         let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         let bitboard = position_fen.parse::<Bitboard>().unwrap();
         assert_eq!(
@@ -362,6 +417,39 @@ pub mod tests {
 
         assert_eq!(bitboard.is_king_in_check(Color::White), true);
         assert_eq!(bitboard.is_king_in_check(Color::Black), true);
+    }
+
+    #[test]
+    fn test_move_piece() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let mut bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        bitboard.move_piece(Color::White, Piece::Queen, Square::D1, Square::E1);
+        assert_eq!(
+            bitboard.get_piece(Color::White, Piece::Queen),
+            BoardSlice(0x10)
+        );
+    }
+
+    #[test]
+    fn test_toggle_move() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let mut bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        bitboard.toggle_move();
+        assert_eq!(bitboard.to_move, Color::Black);
+
+        bitboard.toggle_move();
+        assert_eq!(bitboard.to_move, Color::White);
+    }
+
+    #[test]
+    fn test_remove_castling_right() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let mut bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
+        assert_eq!(bitboard.castling_rights, 0b1110);
     }
 
     #[test]

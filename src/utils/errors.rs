@@ -29,3 +29,9 @@ pub enum MagicNumberError {
     #[error("Magic number was not able to be found. Try changing the seed.")]
     MagicNumberNotFound,
 }
+
+#[derive(Debug, Error, PartialEq)]
+pub enum PerformMoveError {
+    #[error("En passant performed with no en passant allowed.")]
+    EnPassantImpossible,
+}
