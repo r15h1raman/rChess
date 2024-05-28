@@ -1,0 +1,20 @@
+name: rChess Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+
+jobs:
+  test_pr_or_push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        run: cargo build --verbose
+        run: cargo test --verbose
+
