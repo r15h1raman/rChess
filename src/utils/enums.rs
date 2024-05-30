@@ -1,5 +1,5 @@
 use int_enum::IntEnum;
-use strum_macros::{EnumIter, EnumString};
+use strum_macros::{EnumIter, EnumString, ToString};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter)]
 pub enum Color {
@@ -34,7 +34,7 @@ pub enum CastleMoves {
     BlackQueensideCastle = 0b1000,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter, EnumString, IntEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter, EnumString, IntEnum, ToString)]
 #[repr(u8)]
 pub enum Square {
     A1 = 0,

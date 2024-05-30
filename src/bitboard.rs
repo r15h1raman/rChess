@@ -137,6 +137,42 @@ impl Bitboard {
             fen.push('/');
         }
         fen.pop();
+
+        fen.push(' ');
+
+        fen.push(match self.to_move {
+            Color::White => 'w',
+            Color::Black => 'b',
+        });
+
+        fen.push(' ');
+
+        if self.castling_rights & CastleMoves::WhiteKingsideCastle as u8 != 0 {
+            fen.push('K');
+        }
+        if self.castling_rights & CastleMoves::WhiteQueensideCastle as u8 != 0 {
+            fen.push('Q');
+        }
+        if self.castling_rights & CastleMoves::BlackKingsideCastle as u8 != 0 {
+            fen.push('k');
+        }
+        if self.castling_rights & CastleMoves::BlackQueensideCastle as u8 != 0 {
+            fen.push('q');
+        }
+
+        fen.push(' ');
+
+        let en_passant_str = match self.en_passant_square {
+            Some(square) => square.to_string().to_lowercase(),
+            None => String::from("-"),
+        };
+        fen.push_str(&en_passant_str);
+
+        fen.push(' ');
+
+        fen.push_str(&format!("{} ", self.half_move_clock));
+        fen.push_str(&format!("{}", self.full_move_clock));
+
         fen
     }
 }
@@ -162,7 +198,6 @@ impl FromStr for Bitboard {
             .enumerate()
             .try_for_each::<_, Result<(), FENParseError>>(|(row_index, &row)| {
                 match row.chars().try_fold(row_index * 8, |acc, c| {
-                    println!("{}", c);
                     if acc >= (row_index + 1) * 8 {
                         return Err(FENParseError::IncorrectBoardRowLength(row_index + 1));
                     }
@@ -330,8 +365,6 @@ impl fmt::Display for Bitboard {
 
 #[cfg(test)]
 pub mod tests {
-    use std::task::Wake;
-
     use super::*;
     use crate::utils::errors::FENParseError;
 
@@ -450,6 +483,20 @@ pub mod tests {
 
         bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
         assert_eq!(bitboard.castling_rights, 0b1110);
+    }
+
+    #[test]
+    fn test_to_str_valid_1() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+        assert_eq!(bitboard.to_str(), position_fen);
+    }
+
+    #[test]
+    fn test_to_str_valid_2() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 1 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+        assert_eq!(bitboard.to_str(), position_fen);
     }
 
     #[test]
