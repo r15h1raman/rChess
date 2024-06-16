@@ -34,4 +34,6 @@ pub enum MagicNumberError {
 pub enum PerformMoveError {
     #[error("En passant performed with no en passant allowed.")]
     EnPassantImpossible,
+    #[error("Impossible double push move.")]
+    ImpossibleDoublePush,
 }

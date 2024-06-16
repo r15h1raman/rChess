@@ -147,17 +147,21 @@ impl Bitboard {
 
         fen.push(' ');
 
-        if self.castling_rights & CastleMoves::WhiteKingsideCastle as u8 != 0 {
-            fen.push('K');
-        }
-        if self.castling_rights & CastleMoves::WhiteQueensideCastle as u8 != 0 {
-            fen.push('Q');
-        }
-        if self.castling_rights & CastleMoves::BlackKingsideCastle as u8 != 0 {
-            fen.push('k');
-        }
-        if self.castling_rights & CastleMoves::BlackQueensideCastle as u8 != 0 {
-            fen.push('q');
+        if self.castling_rights == 0 {
+            fen.push('-');
+        } else {
+            if self.castling_rights & CastleMoves::WhiteKingsideCastle as u8 != 0 {
+                fen.push('K');
+            }
+            if self.castling_rights & CastleMoves::WhiteQueensideCastle as u8 != 0 {
+                fen.push('Q');
+            }
+            if self.castling_rights & CastleMoves::BlackKingsideCastle as u8 != 0 {
+                fen.push('k');
+            }
+            if self.castling_rights & CastleMoves::BlackQueensideCastle as u8 != 0 {
+                fen.push('q');
+            }
         }
 
         fen.push(' ');
@@ -259,13 +263,17 @@ impl FromStr for Bitboard {
             _ => return Err(FENParseError::IncorrectToMove),
         };
 
-        let castling_rights = fen_parts[2].chars().try_fold(0, |acc, c| match c {
-            'K' => Ok(acc | CastleMoves::WhiteKingsideCastle as u8),
-            'Q' => Ok(acc | CastleMoves::WhiteQueensideCastle as u8),
-            'k' => Ok(acc | CastleMoves::BlackKingsideCastle as u8),
-            'q' => Ok(acc | CastleMoves::BlackQueensideCastle as u8),
-            _ => Err(FENParseError::IncorrectCastlingRights),
-        })?;
+        let castling_rights = if fen_parts[2].chars().next() == Some('-') {
+            0
+        } else {
+            fen_parts[2].chars().try_fold(0, |acc, c| match c {
+                'K' => Ok(acc | CastleMoves::WhiteKingsideCastle as u8),
+                'Q' => Ok(acc | CastleMoves::WhiteQueensideCastle as u8),
+                'k' => Ok(acc | CastleMoves::BlackKingsideCastle as u8),
+                'q' => Ok(acc | CastleMoves::BlackQueensideCastle as u8),
+                _ => Err(FENParseError::IncorrectCastlingRights),
+            })?
+        };
 
         let en_passant_square = match fen_parts[3].to_ascii_uppercase().as_str() {
             "-" => None,

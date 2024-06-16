@@ -1,7 +1,7 @@
 use int_enum::IntEnum;
-use strum_macros::{EnumIter, EnumString, ToString};
+use strum_macros::{Display, EnumIter, EnumString, ToString};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, EnumIter)]
+#[derive(Clone, Copy, Debug, Display, PartialEq, Eq, EnumIter)]
 pub enum Color {
     White,
     Black,
