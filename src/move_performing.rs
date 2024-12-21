@@ -1,4 +1,7 @@
+use std::{i8, usize};
+
 use int_enum::IntEnum;
+use strum::IntoEnumIterator;
 
 use crate::{
     bitboard::Bitboard,
@@ -12,67 +15,67 @@ pub struct Move {
     orig: Square,
     dest: Square,
 
-    color: Color,
-    piece: Piece,
-
-    capture: Option<Piece>,
-    castle: Option<CastleMoves>,
-    double_push: bool,
-    en_passant: bool,
     promotion: Option<Piece>,
 }
 
+/// Perform move on bitboard and return correct new bitboard or error if encountered
+/// Function does NOT check for legality of move. Illegal moves may result in the function throwing
+/// an error or returning correctly (undefined behavior).
 fn perform_move(bitboard: &Bitboard, _move: &Move) -> Result<Bitboard, PerformMoveError> {
     let mut new_bitboard = bitboard.clone();
 
-    // Castling
-    match _move.castle {
-        Some(castle) => {
-            match castle {
-                CastleMoves::WhiteKingsideCastle => {
-                    new_bitboard.move_piece(Color::White, Piece::King, Square::E1, Square::G1);
-                    new_bitboard.move_piece(Color::White, Piece::Rook, Square::H1, Square::F1);
-                    new_bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
-                    new_bitboard.remove_castling_right(CastleMoves::WhiteQueensideCastle);
-                }
-                CastleMoves::BlackKingsideCastle => {
-                    new_bitboard.move_piece(Color::Black, Piece::King, Square::E8, Square::G8);
-                    new_bitboard.move_piece(Color::Black, Piece::Rook, Square::H8, Square::F8);
-                    new_bitboard.remove_castling_right(CastleMoves::BlackKingsideCastle);
-                    new_bitboard.remove_castling_right(CastleMoves::BlackQueensideCastle);
-                }
-                CastleMoves::WhiteQueensideCastle => {
-                    new_bitboard.move_piece(Color::White, Piece::King, Square::E1, Square::C1);
-                    new_bitboard.move_piece(Color::White, Piece::Rook, Square::A1, Square::D1);
-                    new_bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
-                    new_bitboard.remove_castling_right(CastleMoves::WhiteQueensideCastle);
-                }
-                CastleMoves::BlackQueensideCastle => {
-                    new_bitboard.move_piece(Color::Black, Piece::King, Square::E8, Square::C8);
-                    new_bitboard.move_piece(Color::Black, Piece::Rook, Square::A8, Square::D8);
-                    new_bitboard.remove_castling_right(CastleMoves::BlackKingsideCastle);
-                    new_bitboard.remove_castling_right(CastleMoves::BlackQueensideCastle);
-                }
-            }
-            new_bitboard.toggle_move();
-            new_bitboard.en_passant_square = None;
-            new_bitboard.half_move_clock += 1;
-            new_bitboard.full_move_clock += if new_bitboard.to_move == Color::White {
-                1
-            } else {
-                0
-            };
-            return Ok(new_bitboard);
-        }
-        None => {}
+    let move_color = if bitboard.get_color_pieces(Color::White).0 & (1 << _move.orig as usize) != 0
+    {
+        Color::White
+    } else {
+        Color::Black
     };
 
+    let move_piece = Piece::iter()
+        .filter(|&piece| bitboard.get_piece(move_color, piece).0 & (1 << _move.orig as usize) != 0)
+        .next()
+        .unwrap();
+
+    // Castling
+    if move_piece == Piece::King && ((_move.orig as i8 - _move.dest as i8).abs() == 2) {
+        if _move.dest == Square::G1 {
+            new_bitboard.move_piece(Color::White, Piece::King, Square::E1, Square::G1);
+            new_bitboard.move_piece(Color::White, Piece::Rook, Square::H1, Square::F1);
+            new_bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
+            new_bitboard.remove_castling_right(CastleMoves::WhiteQueensideCastle);
+        } else if _move.dest == Square::G8 {
+            new_bitboard.move_piece(Color::Black, Piece::King, Square::E8, Square::G8);
+            new_bitboard.move_piece(Color::Black, Piece::Rook, Square::H8, Square::F8);
+            new_bitboard.remove_castling_right(CastleMoves::BlackKingsideCastle);
+            new_bitboard.remove_castling_right(CastleMoves::BlackQueensideCastle);
+        } else if _move.dest == Square::C1 {
+            new_bitboard.move_piece(Color::White, Piece::King, Square::E1, Square::C1);
+            new_bitboard.move_piece(Color::White, Piece::Rook, Square::A1, Square::D1);
+            new_bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
+            new_bitboard.remove_castling_right(CastleMoves::WhiteQueensideCastle);
+        } else if _move.dest == Square::C8 {
+            new_bitboard.move_piece(Color::Black, Piece::King, Square::E8, Square::C8);
+            new_bitboard.move_piece(Color::Black, Piece::Rook, Square::A8, Square::D8);
+            new_bitboard.remove_castling_right(CastleMoves::BlackKingsideCastle);
+            new_bitboard.remove_castling_right(CastleMoves::BlackQueensideCastle);
+        }
+        new_bitboard.toggle_move();
+        new_bitboard.en_passant_square = None;
+        new_bitboard.half_move_clock += 1;
+        new_bitboard.full_move_clock += if new_bitboard.to_move == Color::White {
+            1
+        } else {
+            0
+        };
+        return Ok(new_bitboard);
+    }
+
     // Double push
-    if _move.double_push {
-        new_bitboard.move_piece(_move.color, Piece::Pawn, _move.orig, _move.dest);
+    if move_piece == Piece::Pawn && ((_move.orig as i8 - _move.dest as i8).abs() == 16) {
+        new_bitboard.move_piece(move_color, Piece::Pawn, _move.orig, _move.dest);
 
         new_bitboard.toggle_move();
-        new_bitboard.en_passant_square = Some(match _move.color {
+        new_bitboard.en_passant_square = Some(match move_color {
             Color::White => Square::from_int(_move.dest as u8 - 8)
                 .map_err(|_| PerformMoveError::ImpossibleDoublePush),
             Color::Black => Square::from_int(_move.dest as u8 + 8)
@@ -88,13 +91,13 @@ fn perform_move(bitboard: &Bitboard, _move: &Move) -> Result<Bitboard, PerformMo
     };
 
     // En passant
-    if _move.en_passant {
-        new_bitboard.move_piece(_move.color, Piece::Pawn, _move.orig, _move.dest);
+    if bitboard.en_passant_square == Some(_move.dest) && move_piece == Piece::Pawn {
+        new_bitboard.move_piece(move_color, Piece::Pawn, _move.orig, _move.dest);
         new_bitboard.remove_piece(
-            _move.color.opposite(),
+            move_color.opposite(),
             Piece::Pawn,
             match bitboard.en_passant_square {
-                Some(square) => match _move.color {
+                Some(square) => match move_color {
                     Color::White => Square::from_int(square as u8 - 8)
                         .map_err(|_| PerformMoveError::EnPassantImpossible),
                     Color::Black => Square::from_int(square as u8 + 8)
@@ -118,8 +121,8 @@ fn perform_move(bitboard: &Bitboard, _move: &Move) -> Result<Bitboard, PerformMo
     // Promotion
     match _move.promotion {
         Some(piece) => {
-            new_bitboard.remove_piece(_move.color, Piece::Pawn, _move.orig);
-            new_bitboard.add_piece(_move.color, piece, _move.dest);
+            new_bitboard.remove_piece(move_color, Piece::Pawn, _move.orig);
+            new_bitboard.add_piece(move_color, piece, _move.dest);
 
             new_bitboard.toggle_move();
             new_bitboard.en_passant_square = None;
@@ -135,34 +138,45 @@ fn perform_move(bitboard: &Bitboard, _move: &Move) -> Result<Bitboard, PerformMo
     }
 
     // Normal and capture
-    new_bitboard.move_piece(_move.color, _move.piece, _move.orig, _move.dest);
-    match _move.capture {
-        Some(piece) => new_bitboard.remove_piece(_move.color.opposite(), piece, _move.dest),
+    let capture_piece = Piece::iter()
+        .filter(|&piece| {
+            bitboard.get_piece(move_color.opposite(), piece).0 & (1 << _move.dest as usize) != 0
+        })
+        .next();
+
+    new_bitboard.move_piece(move_color, move_piece, _move.orig, _move.dest);
+
+    match capture_piece {
+        Some(piece) => new_bitboard.remove_piece(move_color.opposite(), piece, _move.dest),
         None => {}
     };
 
-    match _move.color {
+    match move_color {
         Color::White => {
-            if _move.piece == Piece::Rook || _move.orig == Square::A1 {
+            if move_piece == Piece::Rook && _move.orig == Square::A1 {
                 new_bitboard.remove_castling_right(CastleMoves::WhiteQueensideCastle);
-            };
-            if _move.piece == Piece::Rook || _move.orig == Square::H1 {
+            } else if move_piece == Piece::Rook && _move.orig == Square::H1 {
                 new_bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
-            };
+            } else if move_piece == Piece::King {
+                new_bitboard.remove_castling_right(CastleMoves::WhiteKingsideCastle);
+                new_bitboard.remove_castling_right(CastleMoves::WhiteQueensideCastle);
+            }
         }
         Color::Black => {
-            if _move.piece == Piece::Rook || _move.orig == Square::A8 {
+            if move_piece == Piece::Rook && _move.orig == Square::A8 {
                 new_bitboard.remove_castling_right(CastleMoves::BlackQueensideCastle);
-            };
-            if _move.piece == Piece::Rook || _move.orig == Square::H8 {
+            } else if move_piece == Piece::Rook && _move.orig == Square::H8 {
                 new_bitboard.remove_castling_right(CastleMoves::BlackKingsideCastle);
-            };
+            } else if move_piece == Piece::King {
+                new_bitboard.remove_castling_right(CastleMoves::BlackKingsideCastle);
+                new_bitboard.remove_castling_right(CastleMoves::BlackQueensideCastle);
+            }
         }
     };
 
     new_bitboard.toggle_move();
     new_bitboard.en_passant_square = None;
-    new_bitboard.half_move_clock = if _move.capture == None && _move.piece != Piece::Pawn {
+    new_bitboard.half_move_clock = if capture_piece == None && move_piece != Piece::Pawn {
         new_bitboard.half_move_clock + 1
     } else {
         0
@@ -175,16 +189,12 @@ fn perform_move(bitboard: &Bitboard, _move: &Move) -> Result<Bitboard, PerformMo
     Ok(new_bitboard)
 }
 
-fn generate_moves(buffer: &mut Vec<Move>, color: Color, bitboard: &Bitboard) {
-    let is_check = bitboard.is_king_in_check(color);
-}
-
 #[cfg(test)]
 pub mod tests {
 
     use crate::{
-        bitboard::{self, Bitboard},
-        utils::enums::{CastleMoves, Color, Piece, Square},
+        bitboard::Bitboard,
+        utils::enums::{Piece, Square},
     };
 
     use super::{perform_move, Move};
@@ -198,13 +208,6 @@ pub mod tests {
             orig: Square::E2,
             dest: Square::E4,
 
-            color: Color::White,
-            piece: Piece::Pawn,
-
-            capture: None,
-            castle: None,
-            double_push: true,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move1).unwrap();
@@ -217,13 +220,6 @@ pub mod tests {
             orig: Square::E7,
             dest: Square::E5,
 
-            color: Color::Black,
-            piece: Piece::Pawn,
-
-            capture: None,
-            castle: None,
-            double_push: true,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move2).unwrap();
@@ -236,13 +232,6 @@ pub mod tests {
             orig: Square::G1,
             dest: Square::F3,
 
-            color: Color::White,
-            piece: Piece::Knight,
-
-            capture: None,
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move3).unwrap();
@@ -255,13 +244,6 @@ pub mod tests {
             orig: Square::D7,
             dest: Square::D6,
 
-            color: Color::Black,
-            piece: Piece::Pawn,
-
-            capture: None,
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move4).unwrap();
@@ -274,13 +256,6 @@ pub mod tests {
             orig: Square::D2,
             dest: Square::D4,
 
-            color: Color::White,
-            piece: Piece::Pawn,
-
-            capture: None,
-            castle: None,
-            double_push: true,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move5).unwrap();
@@ -293,13 +268,6 @@ pub mod tests {
             orig: Square::C8,
             dest: Square::G4,
 
-            color: Color::Black,
-            piece: Piece::Bishop,
-
-            capture: None,
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move6).unwrap();
@@ -312,13 +280,6 @@ pub mod tests {
             orig: Square::D4,
             dest: Square::E5,
 
-            color: Color::White,
-            piece: Piece::Pawn,
-
-            capture: Some(Piece::Pawn),
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move7).unwrap();
@@ -331,13 +292,6 @@ pub mod tests {
             orig: Square::G4,
             dest: Square::F3,
 
-            color: Color::Black,
-            piece: Piece::Bishop,
-
-            capture: Some(Piece::Knight),
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move8).unwrap();
@@ -350,13 +304,6 @@ pub mod tests {
             orig: Square::D1,
             dest: Square::F3,
 
-            color: Color::White,
-            piece: Piece::Queen,
-
-            capture: Some(Piece::Bishop),
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move9).unwrap();
@@ -369,13 +316,6 @@ pub mod tests {
             orig: Square::D6,
             dest: Square::E5,
 
-            color: Color::Black,
-            piece: Piece::Pawn,
-
-            capture: Some(Piece::Pawn),
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move10).unwrap();
@@ -388,16 +328,9 @@ pub mod tests {
         let position_fen = "r3kb1r/p2nqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/R3K2R w KQkq - 1 12";
         let bitboard = position_fen.parse::<Bitboard>().unwrap();
         let move23 = Move {
-            orig: Square::A1,
-            dest: Square::A1,
+            orig: Square::E1,
+            dest: Square::C1,
 
-            color: Color::White,
-            piece: Piece::King,
-
-            capture: None,
-            castle: Some(CastleMoves::WhiteQueensideCastle),
-            double_push: false,
-            en_passant: false,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move23).unwrap();
@@ -415,13 +348,6 @@ pub mod tests {
             orig: Square::E7,
             dest: Square::E8,
 
-            color: Color::White,
-            piece: Piece::Pawn,
-
-            capture: None,
-            castle: None,
-            double_push: false,
-            en_passant: false,
             promotion: Some(Piece::Rook),
         };
         let bitboard = perform_move(&bitboard, &move1).unwrap();
@@ -436,19 +362,48 @@ pub mod tests {
             orig: Square::D5,
             dest: Square::C6,
 
-            color: Color::White,
-            piece: Piece::Pawn,
-
-            capture: None,
-            castle: None,
-            double_push: false,
-            en_passant: true,
             promotion: None,
         };
         let bitboard = perform_move(&bitboard, &move1).unwrap();
         assert_eq!(
             bitboard.to_str(),
             "rnbqkbnr/pp1p2pp/2P5/4pp2/4P3/8/PPP2PPP/RNBQKBNR b KQkq - 0 4"
+        )
+    }
+
+    #[test]
+    fn test_remove_castle_rights_on_king_move() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+        let move1 = Move {
+            orig: Square::E1,
+            dest: Square::D1,
+
+            promotion: None,
+        };
+
+        let bitboard = perform_move(&bitboard, &move1).unwrap();
+        assert_eq!(
+            bitboard.to_str(),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R2K3R b kq - 1 1"
+        )
+    }
+
+    #[test]
+    fn test_remove_castle_rights_on_rook_move() {
+        let position_fen = "r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R b KQkq - 1 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+        let move1 = Move {
+            orig: Square::A8,
+            dest: Square::B8,
+
+            promotion: None,
+        };
+
+        let bitboard = perform_move(&bitboard, &move1).unwrap();
+        assert_eq!(
+            bitboard.to_str(),
+            "1r2k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQk - 2 2"
         )
     }
 }
