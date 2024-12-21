@@ -17,11 +17,11 @@ macro_rules! bitboard_piece_index {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Bitboard {
-    pub pieces: [BoardSlice; 12],
+    pieces: [BoardSlice; 12],
 
     pub to_move: Color,
 
-    pub castling_rights: u8,
+    castling_rights: u8,
 
     pub en_passant_square: Option<Square>,
 
@@ -74,6 +74,10 @@ impl Bitboard {
 
     pub fn is_king_in_check(&self, color: Color) -> bool {
         self.is_square_attacked(color.opposite(), self.get_king_square(color))
+    }
+
+    pub fn has_castling_right(&self, cm: CastleMoves) -> bool {
+        self.castling_rights & (cm as u8) != 0
     }
 
     pub fn add_piece(&mut self, color: Color, piece: Piece, square: Square) {
