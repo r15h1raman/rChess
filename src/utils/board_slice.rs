@@ -1,4 +1,7 @@
-use std::fmt;
+use std::{
+    fmt,
+    ops::{BitAnd, BitAndAssign, BitOr, Not},
+};
 
 use int_enum::IntEnum;
 
@@ -30,7 +33,7 @@ impl fmt::Display for BoardSlice {
 }
 
 impl BoardSlice {
-    fn iter_square(&self) -> impl Iterator<Item = Square> {
+    pub fn iter(&self) -> impl Iterator<Item = Square> {
         let mut curr_board = self.0;
         std::iter::from_fn(move || {
             if curr_board == 0 {
@@ -44,6 +47,30 @@ impl BoardSlice {
     }
 }
 
+impl BitAnd for BoardSlice {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        BoardSlice(self.0 & rhs.0)
+    }
+}
+
+impl BitOr for BoardSlice {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        BoardSlice(self.0 | rhs.0)
+    }
+}
+
+impl Not for BoardSlice {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        BoardSlice(!self.0)
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -51,7 +78,7 @@ pub mod tests {
     #[test]
     fn test_board_slice_iter() {
         let board_slice = BoardSlice(0b1010101);
-        let squares: Vec<Square> = board_slice.iter_square().collect();
+        let squares: Vec<Square> = board_slice.iter().collect();
         let expected_vec = vec![Square::A1, Square::C1, Square::E1, Square::G1];
         assert_eq!(squares, expected_vec);
     }

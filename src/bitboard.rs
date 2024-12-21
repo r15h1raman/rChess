@@ -35,9 +35,11 @@ impl Bitboard {
     }
 
     pub fn get_all_pieces(&self) -> BoardSlice {
-        self.pieces
-            .iter()
-            .fold(BoardSlice(0), |acc, &x| BoardSlice(acc.0 | x.0))
+        self.pieces.iter().fold(BoardSlice(0), |acc, &x| acc | x)
+    }
+
+    pub fn get_empty_squares(&self) -> BoardSlice {
+        !self.get_all_pieces()
     }
 
     pub fn get_color_pieces(&self, color: Color) -> BoardSlice {
@@ -46,26 +48,26 @@ impl Bitboard {
                 .pieces
                 .iter()
                 .take(6)
-                .fold(BoardSlice(0), |acc, &x| BoardSlice(acc.0 | x.0)),
+                .fold(BoardSlice(0), |acc, &x| acc | x),
             Color::Black => self
                 .pieces
                 .iter()
                 .skip(6)
-                .fold(BoardSlice(0), |acc, &x| BoardSlice(acc.0 | x.0)),
+                .fold(BoardSlice(0), |acc, &x| acc | x),
         }
     }
 
     pub fn is_square_attacked(&self, color: Color, square: Square) -> bool {
-        ((get_pawn_attacks(color.opposite(), square).0 & self.get_piece(color, Piece::Pawn).0)
-            | (get_knight_attacks(square).0 & self.get_piece(color, Piece::Knight).0)
-            | (get_bishop_attacks(square, self.get_all_pieces()).0
-                & self.get_piece(color, Piece::Bishop).0)
-            | (get_rook_attacks(square, self.get_all_pieces()).0
-                & self.get_piece(color, Piece::Rook).0)
-            | (get_queen_attacks(square, self.get_all_pieces()).0
-                & self.get_piece(color, Piece::Queen).0)
-            | (get_king_attacks(square).0 & self.get_piece(color, Piece::King).0))
-            != 0
+        ((get_pawn_attacks(color.opposite(), square) & self.get_piece(color, Piece::Pawn))
+            | (get_knight_attacks(square) & self.get_piece(color, Piece::Knight))
+            | (get_bishop_attacks(square, self.get_all_pieces())
+                & self.get_piece(color, Piece::Bishop))
+            | (get_rook_attacks(square, self.get_all_pieces())
+                & self.get_piece(color, Piece::Rook))
+            | (get_queen_attacks(square, self.get_all_pieces())
+                & self.get_piece(color, Piece::Queen))
+            | (get_king_attacks(square) & self.get_piece(color, Piece::King)))
+        .0 != 0
     }
 
     pub fn get_king_square(&self, color: Color) -> Square {
@@ -401,6 +403,17 @@ pub mod tests {
         let bitboard = position_fen.parse::<Bitboard>().unwrap();
 
         assert_eq!(bitboard.get_all_pieces(), BoardSlice(0xFFFF00000000FFFF));
+    }
+
+    #[test]
+    fn test_get_empty_square() {
+        let position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let bitboard = position_fen.parse::<Bitboard>().unwrap();
+
+        assert_eq!(
+            bitboard.get_empty_squares(),
+            BoardSlice(!0xFFFF00000000FFFF)
+        );
     }
 
     #[test]

@@ -6,17 +6,11 @@ use strum::IntoEnumIterator;
 use crate::{
     bitboard::Bitboard,
     utils::{
+        _move::Move,
         enums::{CastleMoves, Color, Piece, Square},
         errors::PerformMoveError,
     },
 };
-
-pub struct Move {
-    orig: Square,
-    dest: Square,
-
-    promotion: Option<Piece>,
-}
 
 /// Perform move on bitboard and return correct new bitboard or error if encountered
 /// Function does NOT check for legality of move. Illegal moves may result in the function throwing
