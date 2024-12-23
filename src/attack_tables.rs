@@ -1,3 +1,5 @@
+use std::usize;
+
 use self::{
     bishop_attack_generators::{generate_bishop_attack_mask, generate_bishop_attacks_on_the_fly},
     magic_number_constants::{
@@ -26,6 +28,10 @@ lazy_static! {
     static ref BLACK_PAWN_MOVE_TABLE: [BoardSlice; 64] = generate_pawn_move_table(Color::Black);
     static ref WHITE_PAWN_ATTACK_TABLE: [BoardSlice; 64] = generate_pawn_attack_table(Color::White);
     static ref BLACK_PAWN_ATTACK_TABLE: [BoardSlice; 64] = generate_pawn_attack_table(Color::Black);
+    static ref WHITE_INVERSE_DOUBLE_PAWN_MOVE_TABLE: [BoardSlice; 64] =
+        generate_inverse_double_pawn_move_table(Color::White);
+    static ref BLACK_INVERSE_DOUBLE_PAWN_MOVE_TABLE: [BoardSlice; 64] =
+        generate_inverse_double_pawn_move_table(Color::Black);
     static ref KNIGHT_ATTACK_TABLE: [BoardSlice; 64] = generate_knight_attack_table();
     static ref KING_ATTACK_TABLE: [BoardSlice; 64] = generate_king_attack_table();
     static ref BISHOP_ATTACK_TABLE: Vec<[BoardSlice; 512]> = generate_bishop_attack_table();
@@ -83,6 +89,25 @@ fn generate_pawn_attack_table(color: Color) -> [BoardSlice; 64] {
                 for j in 1..8 {
                     attack_table[i * 8 + j].0 |= 1 << (i * 8 + j - 9);
                 }
+            }
+        }
+    }
+
+    attack_table
+}
+
+#[allow(clippy::needless_range_loop)]
+fn generate_inverse_double_pawn_move_table(color: Color) -> [BoardSlice; 64] {
+    let mut attack_table = [BoardSlice(0); 64];
+    match color {
+        Color::White => {
+            for j in 0..8 {
+                attack_table[3 * 8 + j].0 |= 1 << (8 + j);
+            }
+        }
+        Color::Black => {
+            for j in 0..8 {
+                attack_table[4 * 8 + j].0 |= 1 << (6 * 8 + j);
             }
         }
     }
@@ -257,6 +282,13 @@ pub fn get_pawn_attacks(color: Color, square: Square) -> BoardSlice {
     }
 }
 
+pub fn get_inverse_double_pawn_move(color: Color, square: Square) -> BoardSlice {
+    match color {
+        Color::White => WHITE_INVERSE_DOUBLE_PAWN_MOVE_TABLE[square as usize],
+        Color::Black => BLACK_INVERSE_DOUBLE_PAWN_MOVE_TABLE[square as usize],
+    }
+}
+
 pub fn get_knight_attacks(square: Square) -> BoardSlice {
     KNIGHT_ATTACK_TABLE[square as usize]
 }
@@ -348,6 +380,30 @@ pub mod tests {
             BoardSlice(0x4000)
         );
         assert_eq!(get_pawn_attacks(Color::Black, Square::H1), BoardSlice(0));
+    }
+
+    #[test]
+    fn test_inverse_double_pawn_move_table() {
+        assert_eq!(
+            get_inverse_double_pawn_move(Color::White, Square::B4),
+            BoardSlice(1 << Square::B2 as usize)
+        );
+        assert_eq!(
+            get_inverse_double_pawn_move(Color::White, Square::G4),
+            BoardSlice(1 << Square::G2 as usize)
+        );
+        assert_eq!(
+            get_inverse_double_pawn_move(Color::Black, Square::B5),
+            BoardSlice(1 << Square::B7 as usize)
+        );
+        assert_eq!(
+            get_inverse_double_pawn_move(Color::Black, Square::G5),
+            BoardSlice(1 << Square::G7 as usize)
+        );
+        assert_eq!(
+            get_inverse_double_pawn_move(Color::White, Square::B3),
+            BoardSlice(0)
+        );
     }
 
     #[test]
