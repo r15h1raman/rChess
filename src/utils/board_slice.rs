@@ -1,6 +1,6 @@
 use std::{
     fmt,
-    ops::{BitAnd, BitAndAssign, BitOr, Not},
+    ops::{BitAnd, BitOr, Not},
 };
 
 use int_enum::IntEnum;
