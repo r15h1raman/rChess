@@ -28,6 +28,10 @@ lazy_static! {
     static ref BLACK_PAWN_MOVE_TABLE: [BoardSlice; 64] = generate_pawn_move_table(Color::Black);
     static ref WHITE_PAWN_ATTACK_TABLE: [BoardSlice; 64] = generate_pawn_attack_table(Color::White);
     static ref BLACK_PAWN_ATTACK_TABLE: [BoardSlice; 64] = generate_pawn_attack_table(Color::Black);
+    static ref WHITE_DOUBLE_PAWN_MOVE_TABLE: [BoardSlice; 64] =
+        generate_double_pawn_move_table(Color::White);
+    static ref BLACK_DOUBLE_PAWN_MOVE_TABLE: [BoardSlice; 64] =
+        generate_double_pawn_move_table(Color::Black);
     static ref WHITE_INVERSE_DOUBLE_PAWN_MOVE_TABLE: [BoardSlice; 64] =
         generate_inverse_double_pawn_move_table(Color::White);
     static ref BLACK_INVERSE_DOUBLE_PAWN_MOVE_TABLE: [BoardSlice; 64] =
@@ -48,9 +52,6 @@ fn generate_pawn_move_table(color: Color) -> [BoardSlice; 64] {
                     attack_table[i * 8 + j].0 |= 1 << (i * 8 + j + 8);
                 }
             }
-            for j in 0..8 {
-                attack_table[8 + j].0 |= 1 << (8 + j + 16);
-            }
         }
         Color::Black => {
             for i in 1..7 {
@@ -58,12 +59,27 @@ fn generate_pawn_move_table(color: Color) -> [BoardSlice; 64] {
                     attack_table[i * 8 + j].0 |= 1 << (i * 8 + j - 8);
                 }
             }
+        }
+    }
+
+    attack_table
+}
+
+#[allow(clippy::needless_range_loop)]
+fn generate_double_pawn_move_table(color: Color) -> [BoardSlice; 64] {
+    let mut attack_table = [BoardSlice(0); 64];
+    match color {
+        Color::White => {
+            for j in 0..8 {
+                attack_table[8 + j].0 |= 1 << (8 + j + 16);
+            }
+        }
+        Color::Black => {
             for j in 0..8 {
                 attack_table[48 + j].0 |= 1 << (48 + j - 16);
             }
         }
     }
-
     attack_table
 }
 
@@ -282,7 +298,14 @@ pub fn get_pawn_attacks(color: Color, square: Square) -> BoardSlice {
     }
 }
 
-pub fn get_inverse_double_pawn_move(color: Color, square: Square) -> BoardSlice {
+pub fn get_double_pawn_moves(color: Color, square: Square) -> BoardSlice {
+    match color {
+        Color::White => WHITE_DOUBLE_PAWN_MOVE_TABLE[square as usize],
+        Color::Black => BLACK_DOUBLE_PAWN_MOVE_TABLE[square as usize],
+    }
+}
+
+pub fn get_inverse_double_pawn_moves(color: Color, square: Square) -> BoardSlice {
     match color {
         Color::White => WHITE_INVERSE_DOUBLE_PAWN_MOVE_TABLE[square as usize],
         Color::Black => BLACK_INVERSE_DOUBLE_PAWN_MOVE_TABLE[square as usize],
@@ -326,7 +349,7 @@ pub mod tests {
         assert_eq!(get_pawn_moves(Color::White, Square::A1), BoardSlice(0));
         assert_eq!(
             get_pawn_moves(Color::White, Square::D2),
-            BoardSlice(0x8080000)
+            BoardSlice(1 << Square::D3 as usize)
         );
         assert_eq!(
             get_pawn_moves(Color::White, Square::E6),
@@ -337,7 +360,7 @@ pub mod tests {
         assert_eq!(get_pawn_moves(Color::Black, Square::A8), BoardSlice(0));
         assert_eq!(
             get_pawn_moves(Color::Black, Square::D7),
-            BoardSlice(0x80800000000)
+            BoardSlice(1 << Square::D6 as usize)
         );
         assert_eq!(get_pawn_moves(Color::Black, Square::E3), BoardSlice(0x1000));
         assert_eq!(get_pawn_moves(Color::Black, Square::H1), BoardSlice(0));
@@ -383,25 +406,45 @@ pub mod tests {
     }
 
     #[test]
+    fn test_double_pawn_move_table() {
+        assert_eq!(
+            get_double_pawn_moves(Color::White, Square::D2),
+            BoardSlice(1 << Square::D4 as usize)
+        );
+        assert_eq!(
+            get_double_pawn_moves(Color::White, Square::D1),
+            BoardSlice(0)
+        );
+        assert_eq!(
+            get_double_pawn_moves(Color::Black, Square::D7),
+            BoardSlice(1 << Square::D5 as usize)
+        );
+        assert_eq!(
+            get_double_pawn_moves(Color::White, Square::D8),
+            BoardSlice(0)
+        );
+    }
+
+    #[test]
     fn test_inverse_double_pawn_move_table() {
         assert_eq!(
-            get_inverse_double_pawn_move(Color::White, Square::B4),
+            get_inverse_double_pawn_moves(Color::White, Square::B4),
             BoardSlice(1 << Square::B2 as usize)
         );
         assert_eq!(
-            get_inverse_double_pawn_move(Color::White, Square::G4),
+            get_inverse_double_pawn_moves(Color::White, Square::G4),
             BoardSlice(1 << Square::G2 as usize)
         );
         assert_eq!(
-            get_inverse_double_pawn_move(Color::Black, Square::B5),
+            get_inverse_double_pawn_moves(Color::Black, Square::B5),
             BoardSlice(1 << Square::B7 as usize)
         );
         assert_eq!(
-            get_inverse_double_pawn_move(Color::Black, Square::G5),
+            get_inverse_double_pawn_moves(Color::Black, Square::G5),
             BoardSlice(1 << Square::G7 as usize)
         );
         assert_eq!(
-            get_inverse_double_pawn_move(Color::White, Square::B3),
+            get_inverse_double_pawn_moves(Color::White, Square::B3),
             BoardSlice(0)
         );
     }
