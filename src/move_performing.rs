@@ -13,9 +13,11 @@ use crate::{
 };
 
 /// Perform move on bitboard and return correct new bitboard or error if encountered
-/// Function does NOT check for legality of move. Illegal moves may result in the function throwing
-/// an error or returning correctly (undefined behavior).
-fn perform_move(bitboard: &Bitboard, _move: &Move) -> Result<Bitboard, PerformMoveError> {
+/// Function does NOT check for legality of move. Moves that make the pieces move in non-standard
+/// ways may result in the function throwin an error or returning correctly (undefined behavior).
+/// If the piece is moved in a standard way, the function CAN safely be used to check if the move put
+/// one's king in check, making the move illegal.
+pub fn perform_move(bitboard: &Bitboard, _move: &Move) -> Result<Bitboard, PerformMoveError> {
     let mut new_bitboard = bitboard.clone();
 
     let move_color = if bitboard.get_color_pieces(Color::White).0 & (1 << _move.orig as usize) != 0
