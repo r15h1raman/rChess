@@ -1,5 +1,9 @@
+use std::usize;
+
 use int_enum::IntEnum;
 use strum_macros::{Display, EnumIter, EnumString, ToString};
+
+use super::board_slice::BoardSlice;
 
 #[derive(Clone, Copy, Debug, Display, PartialEq, Eq, EnumIter)]
 pub enum Color {
@@ -103,26 +107,36 @@ pub enum Square {
     H8 = 63,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, IntEnum)]
+#[repr(u8)]
 pub enum File {
-    AFile,
-    BFile,
-    CFile,
-    DFile,
-    EFile,
-    FFile,
-    GFile,
-    HFile,
+    AFile = 0,
+    BFile = 1,
+    CFile = 2,
+    DFile = 3,
+    EFile = 4,
+    FFile = 5,
+    GFile = 6,
+    HFile = 7,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub fn file_mask(file: File) -> BoardSlice {
+    BoardSlice(0x0101010101010101 << file as usize)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, IntEnum)]
+#[repr(u8)]
 pub enum Rank {
-    Rank1,
-    Rank2,
-    Rank3,
-    Rank4,
-    Rank5,
-    Rank6,
-    Rank7,
-    Rank8,
+    Rank1 = 0,
+    Rank2 = 1,
+    Rank3 = 2,
+    Rank4 = 3,
+    Rank5 = 4,
+    Rank6 = 5,
+    Rank7 = 6,
+    Rank8 = 7,
+}
+
+pub fn rank_mask(rank: Rank) -> BoardSlice {
+    BoardSlice(0xFF << 8 * rank as usize)
 }
